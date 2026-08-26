@@ -1,0 +1,8 @@
+@extends('layouts.administrador')
+@section('title','Arqueos Anulados')
+@section('module-title','Arqueos Anulados')
+@section('content')
+<div class="page-header"><div class="page-title"><h2>Arqueos Anulados</h2><p>Historial de arqueos anulados. No existe rectificación ni reactivación.</p></div></div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">@foreach([['Total',$resumen->total],['Agente',$resumen->agente],['Promotor',$resumen->promotor],['Extemporáneos',$resumen->extemporaneos]] as [$l,$v])<div style="padding:15px;border:1px solid #e0e8ee;border-radius:15px;background:#fff;"><span>{{ $l }}</span><strong style="display:block;font-size:22px;">{{ $v }}</strong></div>@endforeach</div>
+<div style="overflow:hidden;border:1px solid #e0e8ee;border-radius:18px;background:#fff;"><div style="overflow-x:auto;"><table style="width:100%;min-width:900px;border-collapse:collapse;"><thead><tr><th style="padding:12px;">Número</th><th>Fecha</th><th>Tipo</th><th>Agente</th><th>Región</th><th>Ruta</th><th>Diferencia</th></tr></thead><tbody>@forelse($arqueos as $a)<tr style="border-top:1px solid #edf1f4;"><td style="padding:12px;">{{ $a->numero_arqueo }}</td><td>{{ \Carbon\Carbon::parse($a->fecha_arqueo)->format('d/m/Y') }}</td><td>{{ str_replace('_',' ',$a->tipo) }}</td><td>{{ $a->codigo_agente }} — {{ $a->nombre_negocio }}</td><td>{{ $a->region_nombre??'—' }}</td><td>{{ $a->ruta_nombre??'—' }}</td><td>Q {{ number_format(abs((float)$a->diferencia),2) }}</td></tr>@empty<tr><td colspan="7" style="padding:30px;text-align:center;">No hay registros anulados.</td></tr>@endforelse</tbody></table></div>@if($arqueos->hasPages())<div style="padding:16px;">{{ $arqueos->links() }}</div>@endif</div>
+@endsection

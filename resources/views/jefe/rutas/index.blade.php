@@ -1,0 +1,567 @@
+@extends('layouts.jefe')
+
+@section('title', 'Gestión de Rutas')
+@section('module-title', 'Gestión de Rutas')
+
+@push('styles')
+
+    <style>
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 15px;
+            margin-bottom: 22px;
+        }
+
+        .summary-card,
+        .filters-card,
+        .table-card {
+            border: 1px solid #e0e8ee;
+            border-radius: 18px;
+            background: #fff;
+            box-shadow: 0 8px 24px rgba(20, 57, 83, 0.05);
+        }
+
+        .summary-card {
+            padding: 18px;
+        }
+
+        .summary-card span {
+            display: block;
+            color: #768692;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .summary-card strong {
+            display: block;
+            margin-top: 8px;
+            color: #082d55;
+            font-size: 25px;
+        }
+
+        .summary-card.warning {
+            border-color: #efd99f;
+            background: #fffdf6;
+        }
+
+        .filters-card {
+            margin-bottom: 20px;
+            padding: 18px;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: minmax(260px, 1fr) 210px 180px;
+            gap: 11px;
+        }
+
+        .form-control {
+            width: 100%;
+            min-height: 42px;
+            padding: 0 12px;
+            border: 1px solid #ced9e1;
+            border-radius: 10px;
+            background: #fff;
+            color: #30485b;
+            outline: none;
+        }
+
+        .filters-actions,
+        .page-actions,
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filters-actions {
+            justify-content: flex-end;
+            margin-top: 13px;
+        }
+
+        .btn,
+        .action-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .btn {
+            min-height: 40px;
+            padding: 0 15px;
+            border: 0;
+            border-radius: 10px;
+            font-size: 10px;
+        }
+
+        .btn-primary {
+            background: #164c96;
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: #edf2f5;
+            color: #3d596f;
+        }
+
+        .btn-success {
+            background: #16834f;
+            color: #fff;
+        }
+
+        .table-card {
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: center;
+            padding: 18px 20px;
+            border-bottom: 1px solid #edf1f4;
+            background: #fafcfd;
+        }
+
+        .table-header h3 {
+            margin: 0;
+            color: #0a3158;
+            font-size: 15px;
+        }
+
+        .table-header p {
+            margin: 5px 0 0;
+            color: #82909a;
+            font-size: 10px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .routes-table {
+            width: 100%;
+            min-width: 1180px;
+            border-collapse: collapse;
+        }
+
+        .routes-table th,
+        .routes-table td {
+            padding: 12px 13px;
+            border-bottom: 1px solid #edf1f4;
+            text-align: left;
+            vertical-align: middle;
+            font-size: 10px;
+        }
+
+        .routes-table th {
+            background: #f7f9fb;
+            color: #687b8b;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .badge {
+            display: inline-flex;
+            padding: 6px 9px;
+            border-radius: 999px;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .badge.active {
+            background: #eaf8ef;
+            color: #1d7b4e;
+        }
+
+        .badge.inactive {
+            background: #fdecec;
+            color: #b13c3c;
+        }
+
+        .action-link {
+            min-height: 34px;
+            padding: 0 10px;
+            border: 1px solid #d5dfe5;
+            border-radius: 9px;
+            background: #fff;
+            color: #31536e;
+            font-size: 9px;
+            white-space: nowrap;
+        }
+
+        .action-link.primary {
+            border-color: #cbdceb;
+            background: #edf5fb;
+            color: #164c96;
+        }
+
+        .action-link.warning {
+            border-color: #eed8a6;
+            background: #fff9e9;
+            color: #8a6511;
+        }
+
+        .action-link.success {
+            border-color: #bee2cc;
+            background: #effaf3;
+            color: #176c40;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            z-index: 100;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(5, 29, 52, 0.55);
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+        }
+
+        .modal-card {
+            width: 100%;
+            max-width: 560px;
+            overflow: hidden;
+            border-radius: 18px;
+            background: #fff;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 18px 20px;
+            border-bottom: 1px solid #edf1f4;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #0a3158;
+            font-size: 16px;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border: 0;
+            border-radius: 10px;
+            background: #eef3f6;
+            color: #4b6578;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #617586;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 16px 20px 20px;
+        }
+
+        .pagination {
+            padding: 16px 18px;
+        }
+
+        @media (max-width: 950px) {
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-actions,
+            .page-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+@endpush
+
+@section('content')
+<div class="page-header">
+    <div class="page-title">
+        <h2>Gestión de Rutas</h2>
+        <p>Administre las rutas operativas, su región asociada y el estado de disponibilidad.</p>
+    </div>
+
+    <div class="page-actions">
+        <button type="button" class="btn btn-success" onclick="abrirCrearRuta()">
+            Nueva Ruta
+        </button>
+    </div>
+</div>
+
+<section class="summary-grid">
+    <article class="summary-card"><span>Total rutas</span><strong>{{ $totalRutas }}</strong></article>
+    <article class="summary-card"><span>Rutas activas</span><strong>{{ $rutasActivas }}</strong></article>
+    <article class="summary-card"><span>Rutas inactivas</span><strong>{{ $rutasInactivas }}</strong></article>
+    <article class="summary-card warning"><span>Rutas sin Promotor</span><strong>{{ $rutasSinPromotor }}</strong></article>
+</section>
+
+<section class="filters-card">
+    <form method="GET" action="{{ route('jefe.rutas.index') }}">
+        <div class="filters-grid">
+            <input type="text" name="buscar" value="{{ $buscar }}" class="form-control" placeholder="Código, ruta o región">
+
+            <select name="region_id" class="form-control">
+                <option value="">Todas las regiones</option>
+                @foreach($regiones as $region)
+                    <option value="{{ $region->id }}" @selected($regionId === (int) $region->id)>
+                        {{ $region->nombre }}
+                    </option>
+                @endforeach
+            </select>
+
+            <select name="estado" class="form-control">
+                <option value="">Todos los estados</option>
+                <option value="ACTIVA" @selected($estado === 'ACTIVA')>Activas</option>
+                <option value="INACTIVA" @selected($estado === 'INACTIVA')>Inactivas</option>
+            </select>
+        </div>
+
+        <div class="filters-actions">
+            <a href="{{ route('jefe.rutas.index') }}" class="btn btn-secondary">Limpiar</a>
+            <button type="submit" class="btn btn-primary">Aplicar filtros</button>
+        </div>
+    </form>
+</section>
+
+<section class="table-card">
+    <header class="table-header">
+        <div>
+            <h3>Rutas registradas</h3>
+            <p>La desactivación se bloquea si existen agentes activos o un Promotor asignado.</p>
+        </div>
+    </header>
+
+    <div class="table-responsive">
+        <table class="routes-table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Ruta</th>
+                    <th>Región</th>
+                    <th>Promotor actual</th>
+                    <th>Agentes</th>
+                    <th>Activos</th>
+                    <th>Arqueados hoy</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @forelse($rutas as $ruta)
+                    @php
+                        $nombrePromotor = trim(($ruta->promotor_nombres ?? '') . ' ' . ($ruta->promotor_apellidos ?? ''));
+                    @endphp
+
+                    <tr>
+                        <td><strong>{{ $ruta->codigo }}</strong></td>
+                        <td>{{ $ruta->nombre }}</td>
+                        <td>{{ $ruta->region_nombre }}</td>
+                        <td>{{ $nombrePromotor !== '' ? $nombrePromotor : ($ruta->promotor_usuario ?: 'Sin Promotor') }}</td>
+                        <td>{{ $ruta->total_agentes }}</td>
+                        <td>{{ $ruta->agentes_activos }}</td>
+                        <td>{{ $ruta->arqueados_hoy }}</td>
+                        <td>
+                            <span class="badge {{ $ruta->estado ? 'active' : 'inactive' }}">
+                                {{ $ruta->estado ? 'ACTIVA' : 'INACTIVA' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="actions">
+                                <button
+                                    type="button"
+                                    class="action-link primary"
+                                    onclick='abrirEditarRuta(@json([
+                                        "id" => $ruta->id,
+                                        "codigo" => $ruta->codigo,
+                                        "nombre" => $ruta->nombre,
+                                        "region_id" => $ruta->region_id,
+                                    ]))'
+                                >
+                                    Editar
+                                </button>
+
+                                <a
+                                    href="{{ route('jefe.agentes-ruta.index', ['ruta_id' => $ruta->id]) }}"
+                                    class="action-link"
+                                >
+                                    Ver agentes
+                                </a>
+
+                                <form
+                                    method="POST"
+                                    action="{{ route('jefe.rutas.estado', $ruta->id) }}"
+                                    onsubmit="return confirm('{{ $ruta->estado ? '¿Desea desactivar esta ruta?' : '¿Desea activar esta ruta?' }}');"
+                                >
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <button
+                                        type="submit"
+                                        class="action-link {{ $ruta->estado ? 'warning' : 'success' }}"
+                                    >
+                                        {{ $ruta->estado ? 'Desactivar' : 'Activar' }}
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="9" style="padding:35px;text-align:center;">No se encontraron rutas.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    @if($rutas->hasPages())
+        <div class="pagination">{{ $rutas->links() }}</div>
+    @endif
+</section>
+
+<div class="modal-backdrop" id="modalRuta">
+    <div class="modal-card">
+        <form method="POST" id="formRuta" action="{{ route('jefe.rutas.store') }}">
+            @csrf
+            <input type="hidden" name="_method" id="rutaMethod" value="POST">
+
+            <header class="modal-header">
+                <h3 id="modalRutaTitulo">Nueva Ruta</h3>
+                <button type="button" class="modal-close" onclick="cerrarModalRuta()">×</button>
+            </header>
+
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="rutaCodigo">Código</label>
+                        <input type="text" name="codigo" id="rutaCodigo" class="form-control" required maxlength="50">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rutaNombre">Nombre de la Ruta</label>
+                        <input type="text" name="nombre" id="rutaNombre" class="form-control" required maxlength="150">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rutaRegion">Región</label>
+                        <select name="region_id" id="rutaRegion" class="form-control" required>
+                            <option value="">Seleccione una región</option>
+                            @foreach($regiones as $region)
+                                @if($region->estado)
+                                    <option value="{{ $region->id }}">{{ $region->nombre }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModalRuta()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </footer>
+        </form>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+    const modalRuta = document.getElementById('modalRuta');
+    const formRuta = document.getElementById('formRuta');
+    const modalRutaTitulo = document.getElementById('modalRutaTitulo');
+    const rutaMethod = document.getElementById('rutaMethod');
+    const rutaCodigo = document.getElementById('rutaCodigo');
+    const rutaNombre = document.getElementById('rutaNombre');
+    const rutaRegion = document.getElementById('rutaRegion');
+    const storeUrl = @json(route('jefe.rutas.store'));
+    const updateBaseUrl = @json(url('/jefe-agentes/rutas'));
+
+    function abrirCrearRuta() {
+        formRuta.reset();
+        formRuta.action = storeUrl;
+        rutaMethod.value = 'POST';
+        modalRutaTitulo.textContent = 'Nueva Ruta';
+        modalRuta.classList.add('open');
+    }
+
+    function abrirEditarRuta(ruta) {
+        formRuta.action = updateBaseUrl + '/' + ruta.id;
+        rutaMethod.value = 'PUT';
+        modalRutaTitulo.textContent = 'Editar Ruta';
+        rutaCodigo.value = ruta.codigo ?? '';
+        rutaNombre.value = ruta.nombre ?? '';
+        rutaRegion.value = String(ruta.region_id ?? '');
+        modalRuta.classList.add('open');
+    }
+
+    function cerrarModalRuta() {
+        modalRuta.classList.remove('open');
+    }
+
+    modalRuta.addEventListener('click', function(event) {
+        if (event.target === modalRuta) {
+            cerrarModalRuta();
+        }
+    });
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            cerrarModalRuta();
+        }
+    });
+</script>
+@endpush
