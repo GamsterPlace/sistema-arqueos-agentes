@@ -17,7 +17,6 @@ class AgenteController extends Controller
     {
         /** @var Usuario $usuario */
         $usuario = $request->user();
-
         $this->validarJefe($usuario);
 
         $buscar = trim((string) $request->string('buscar'));
@@ -27,26 +26,15 @@ class AgenteController extends Controller
 
         $regiones = DB::table('regiones')
             ->orderBy('nombre')
-            ->get([
-                'id',
-                'nombre',
-            ]);
+            ->get(['id', 'nombre']);
 
         $rutas = DB::table('rutas')
             ->when(
                 $regionId > 0,
-                fn ($query) => $query->where(
-                    'region_id',
-                    $regionId
-                )
+                fn ($query) => $query->where('region_id', $regionId)
             )
             ->orderBy('nombre')
-            ->get([
-                'id',
-                'codigo',
-                'nombre',
-                'region_id',
-            ]);
+            ->get(['id', 'codigo', 'nombre', 'region_id']);
 
         $agentes = DB::table('agentes as a')
             ->join('rutas as r', 'r.id', '=', 'a.ruta_id')
@@ -57,82 +45,39 @@ class AgenteController extends Controller
                     $join
                         ->on('apr.ruta_id', '=', 'r.id')
                         ->where('apr.estado', true)
-                        ->whereDate(
-                            'apr.fecha_inicio',
-                            '<=',
-                            today()
-                        )
+                        ->whereDate('apr.fecha_inicio', '<=', today())
                         ->where(function ($query): void {
                             $query
                                 ->whereNull('apr.fecha_fin')
-                                ->orWhereDate(
-                                    'apr.fecha_fin',
-                                    '>=',
-                                    today()
-                                );
+                                ->orWhereDate('apr.fecha_fin', '>=', today());
                         });
                 }
             )
-            ->leftJoin(
-                'usuarios as up',
-                'up.id',
-                '=',
-                'apr.promotor_usuario_id'
-            )
-            ->leftJoin(
-                'datos_personales as dp',
-                'dp.usuario_id',
-                '=',
-                'up.id'
-            )
+            ->leftJoin('usuarios as up', 'up.id', '=', 'apr.promotor_usuario_id')
+            ->leftJoin('datos_personales as dp', 'dp.usuario_id', '=', 'up.id')
             ->when(
                 $buscar !== '',
                 function ($query) use ($buscar): void {
                     $query->where(function ($subquery) use ($buscar): void {
                         $subquery
-                            ->where(
-                                'a.codigo_agente',
-                                'like',
-                                '%' . $buscar . '%'
-                            )
-                            ->orWhere(
-                                'a.nombre_negocio',
-                                'like',
-                                '%' . $buscar . '%'
-                            )
-                            ->orWhere(
-                                'a.nombre_propietario',
-                                'like',
-                                '%' . $buscar . '%'
-                            )
-                            ->orWhere(
-                                'a.direccion',
-                                'like',
-                                '%' . $buscar . '%'
-                            );
+                            ->where('a.codigo_agente', 'like', '%' . $buscar . '%')
+                            ->orWhere('a.nombre_negocio', 'like', '%' . $buscar . '%')
+                            ->orWhere('a.nombre_propietario', 'like', '%' . $buscar . '%')
+                            ->orWhere('a.direccion', 'like', '%' . $buscar . '%');
                     });
                 }
             )
             ->when(
                 $regionId > 0,
-                fn ($query) => $query->where(
-                    'reg.id',
-                    $regionId
-                )
+                fn ($query) => $query->where('reg.id', $regionId)
             )
             ->when(
                 $rutaId > 0,
-                fn ($query) => $query->where(
-                    'r.id',
-                    $rutaId
-                )
+                fn ($query) => $query->where('r.id', $rutaId)
             )
             ->when(
                 $estado !== '',
-                fn ($query) => $query->where(
-                    'a.estado',
-                    $estado
-                )
+                fn ($query) => $query->where('a.estado', $estado)
             )
             ->select([
                 'a.id',
@@ -154,29 +99,15 @@ class AgenteController extends Controller
             ->selectSub(
                 DB::table('arqueos')
                     ->selectRaw('COUNT(*)')
-                    ->whereColumn(
-                        'arqueos.agente_id',
-                        'a.id'
-                    )
-                    ->where(
-                        'arqueos.estado',
-                        '!=',
-                        'ANULADO'
-                    ),
+                    ->whereColumn('arqueos.agente_id', 'a.id')
+                    ->where('arqueos.estado', '!=', 'ANULADO'),
                 'total_arqueos'
             )
             ->selectSub(
                 DB::table('arqueos')
                     ->select('fecha_arqueo')
-                    ->whereColumn(
-                        'arqueos.agente_id',
-                        'a.id'
-                    )
-                    ->where(
-                        'arqueos.estado',
-                        '!=',
-                        'ANULADO'
-                    )
+                    ->whereColumn('arqueos.agente_id', 'a.id')
+                    ->where('arqueos.estado', '!=', 'ANULADO')
                     ->orderByDesc('fecha_arqueo')
                     ->orderByDesc('id')
                     ->limit(1),
@@ -185,23 +116,10 @@ class AgenteController extends Controller
             ->selectSub(
                 DB::table('arqueos')
                     ->selectRaw('COUNT(*)')
-                    ->whereColumn(
-                        'arqueos.agente_id',
-                        'a.id'
-                    )
-                    ->where(
-                        'arqueos.tipo',
-                        'DIARIO_AGENTE'
-                    )
-                    ->whereDate(
-                        'arqueos.fecha_arqueo',
-                        today()
-                    )
-                    ->where(
-                        'arqueos.estado',
-                        '!=',
-                        'ANULADO'
-                    ),
+                    ->whereColumn('arqueos.agente_id', 'a.id')
+                    ->where('arqueos.tipo', 'DIARIO_AGENTE')
+                    ->whereDate('arqueos.fecha_arqueo', today())
+                    ->where('arqueos.estado', '!=', 'ANULADO'),
                 'arqueo_hoy'
             )
             ->distinct()
@@ -225,92 +143,157 @@ class AgenteController extends Controller
                 $query
                     ->selectRaw('1')
                     ->from('arqueos as arq')
-                    ->whereColumn(
-                        'arq.agente_id',
-                        'a.id'
-                    )
-                    ->where(
-                        'arq.tipo',
-                        'DIARIO_AGENTE'
-                    )
-                    ->whereDate(
-                        'arq.fecha_arqueo',
-                        today()
-                    )
-                    ->where(
-                        'arq.estado',
-                        '!=',
-                        'ANULADO'
-                    );
+                    ->whereColumn('arq.agente_id', 'a.id')
+                    ->where('arq.tipo', 'DIARIO_AGENTE')
+                    ->whereDate('arq.fecha_arqueo', today())
+                    ->where('arq.estado', '!=', 'ANULADO');
             })
             ->count();
 
-        return view('jefe.agentes.index', [
-            'agentes' => $agentes,
-            'regiones' => $regiones,
-            'rutas' => $rutas,
-            'buscar' => $buscar,
-            'regionId' => $regionId,
-            'rutaId' => $rutaId,
-            'estado' => $estado,
-            'totalActivos' => $totalActivos,
-            'totalInactivos' => $totalInactivos,
-            'conArqueoHoy' => $conArqueoHoy,
+        return view('jefe.agentes.index', compact(
+            'agentes',
+            'regiones',
+            'rutas',
+            'buscar',
+            'regionId',
+            'rutaId',
+            'estado',
+            'totalActivos',
+            'totalInactivos',
+            'conArqueoHoy'
+        ));
+    }
+
+    public function show(Request $request, int $agente): View
+    {
+        /** @var Usuario $usuario */
+        $usuario = $request->user();
+        $this->validarJefe($usuario);
+
+        $registro = $this->obtenerAgente($agente);
+
+        abort_if(
+            ! $registro,
+            404,
+            'El agente solicitado no existe.'
+        );
+
+        $resumen = $this->obtenerResumen($agente);
+        $ultimosArqueos = $this->obtenerUltimosArqueos($agente);
+
+        return view('jefe.agentes.show', [
+            'agente' => $registro,
+            'resumen' => $resumen,
+            'ultimosArqueos' => $ultimosArqueos,
         ]);
     }
 
-    public function show(
+    public function imprimirFicha(
         Request $request,
         int $agente
-    ): View {
+    ): Response {
         /** @var Usuario $usuario */
         $usuario = $request->user();
-
         $this->validarJefe($usuario);
 
-        $registro = DB::table('agentes as a')
+        $registro = $this->obtenerAgente($agente);
+
+        abort_if(
+            ! $registro,
+            404,
+            'El agente solicitado no existe.'
+        );
+
+        $resumen = $this->obtenerResumen($agente);
+        $ultimosArqueos = $this->obtenerUltimosArqueos($agente);
+
+        $pdf = Pdf::loadView(
+            'jefe.agentes.ficha-pdf',
+            [
+                'agente' => $registro,
+                'resumen' => $resumen,
+                'ultimosArqueos' => $ultimosArqueos,
+            ]
+        )->setPaper('letter', 'portrait');
+
+        return $pdf->stream(
+            'agente-'
+            . $registro->codigo_agente
+            . '-'
+            . now()->format('Ymd-His')
+            . '.pdf'
+        );
+    }
+
+    public function imprimir(
+        Request $request,
+        int $agente,
+        Arqueo $arqueo
+    ): Response {
+        /** @var Usuario $usuario */
+        $usuario = $request->user();
+        $this->validarJefe($usuario);
+
+        abort_if(
+            (int) $arqueo->agente_id !== $agente,
+            404,
+            'El arqueo no pertenece al agente seleccionado.'
+        );
+
+        abort_if(
+            ! in_array(
+                $arqueo->tipo,
+                ['DIARIO_AGENTE', 'VISITA_PROMOTOR'],
+                true
+            ),
+            404,
+            'El arqueo solicitado no es válido.'
+        );
+
+        $arqueo->loadMissing(['detalles', 'firmas']);
+
+        $billetes = $arqueo->detalles
+            ->where('tipo', 'BILLETE')
+            ->sortByDesc('denominacion')
+            ->values();
+
+        $monedas = $arqueo->detalles
+            ->where('tipo', 'MONEDA')
+            ->sortByDesc('denominacion')
+            ->values();
+
+        $pdf = Pdf::loadView(
+            'jefe.agentes.pdf',
+            compact('arqueo', 'billetes', 'monedas')
+        )->setPaper('letter', 'portrait');
+
+        return $pdf->stream(
+            $arqueo->numero_arqueo . '.pdf'
+        );
+    }
+
+    private function obtenerAgente(int $agente): ?object
+    {
+        return DB::table('agentes as a')
             ->join('rutas as r', 'r.id', '=', 'a.ruta_id')
             ->join('regiones as reg', 'reg.id', '=', 'r.region_id')
-            ->leftJoin(
-                'usuarios as ua',
-                'ua.id',
-                '=',
-                'a.usuario_id'
-            )
+            ->leftJoin('usuarios as ua', 'ua.id', '=', 'a.usuario_id')
             ->leftJoin(
                 'asignaciones_promotor_ruta as apr',
                 function ($join): void {
                     $join
                         ->on('apr.ruta_id', '=', 'r.id')
                         ->where('apr.estado', true)
-                        ->whereDate(
-                            'apr.fecha_inicio',
-                            '<=',
-                            today()
-                        )
+                        ->whereDate('apr.fecha_inicio', '<=', today())
                         ->where(function ($query): void {
                             $query
                                 ->whereNull('apr.fecha_fin')
-                                ->orWhereDate(
-                                    'apr.fecha_fin',
-                                    '>=',
-                                    today()
-                                );
+                                ->orWhereDate('apr.fecha_fin', '>=', today());
                         });
                 }
             )
-            ->leftJoin(
-                'usuarios as up',
-                'up.id',
-                '=',
-                'apr.promotor_usuario_id'
-            )
-            ->leftJoin(
-                'datos_personales as dp',
-                'dp.usuario_id',
-                '=',
-                'up.id'
-            )
+            ->leftJoin('usuarios as up', 'up.id', '=', 'apr.promotor_usuario_id')
+            ->leftJoin('datos_personales as dp', 'dp.usuario_id', '=', 'up.id')
             ->where('a.id', $agente)
             ->select([
                 'a.id',
@@ -332,18 +315,13 @@ class AgenteController extends Controller
                 'dp.apellidos as promotor_apellidos',
             ])
             ->first();
+    }
 
-        abort_if(
-            ! $registro,
-            404,
-            'El agente solicitado no existe.'
-        );
-
-        $resumen = DB::table('arqueos')
+    private function obtenerResumen(int $agente): object
+    {
+        return DB::table('arqueos')
             ->where('agente_id', $agente)
-            ->selectRaw(
-                "COUNT(*) as total_arqueos"
-            )
+            ->selectRaw('COUNT(*) as total_arqueos')
             ->selectRaw(
                 "SUM(CASE
                     WHEN tipo = 'DIARIO_AGENTE'
@@ -365,8 +343,11 @@ class AgenteController extends Controller
                 ) as anulados"
             )
             ->first();
+    }
 
-        $ultimosArqueos = DB::table('arqueos')
+    private function obtenerUltimosArqueos(int $agente)
+    {
+        return DB::table('arqueos')
             ->where('agente_id', $agente)
             ->select([
                 'id',
@@ -382,78 +363,10 @@ class AgenteController extends Controller
             ->orderByDesc('id')
             ->limit(10)
             ->get();
-
-        return view('jefe.agentes.show', [
-            'agente' => $registro,
-            'resumen' => $resumen,
-            'ultimosArqueos' => $ultimosArqueos,
-        ]);
     }
 
-    public function imprimir(
-        Request $request,
-        int $agente,
-        Arqueo $arqueo
-    ): Response {
-        /** @var Usuario $usuario */
-        $usuario = $request->user();
-
-        $this->validarJefe($usuario);
-
-        abort_if(
-            (int) $arqueo->agente_id !== $agente,
-            404,
-            'El arqueo no pertenece al agente seleccionado.'
-        );
-
-        abort_if(
-            ! in_array(
-                $arqueo->tipo,
-                [
-                    'DIARIO_AGENTE',
-                    'VISITA_PROMOTOR',
-                ],
-                true
-            ),
-            404,
-            'El arqueo solicitado no es válido.'
-        );
-
-        $arqueo->loadMissing([
-            'detalles',
-            'firmas',
-        ]);
-
-        $billetes = $arqueo->detalles
-            ->where('tipo', 'BILLETE')
-            ->sortByDesc('denominacion')
-            ->values();
-
-        $monedas = $arqueo->detalles
-            ->where('tipo', 'MONEDA')
-            ->sortByDesc('denominacion')
-            ->values();
-
-        $pdf = Pdf::loadView(
-            'jefe.agentes.pdf',
-            [
-                'arqueo' => $arqueo,
-                'billetes' => $billetes,
-                'monedas' => $monedas,
-            ]
-        )->setPaper(
-            'letter',
-            'portrait'
-        );
-
-        return $pdf->stream(
-            $arqueo->numero_arqueo . '.pdf'
-        );
-    }
-
-    private function validarJefe(
-        Usuario $usuario
-    ): void {
+    private function validarJefe(Usuario $usuario): void
+    {
         $usuario->loadMissing('rol');
 
         abort_if(

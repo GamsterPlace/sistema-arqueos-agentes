@@ -70,12 +70,6 @@
             )
             : '';
 
-        $estadoDiferencia = match (true) {
-            (float) $arqueo->diferencia > 0 => 'SOBRANTE',
-            (float) $arqueo->diferencia < 0 => 'FALTANTE',
-            default => 'CUADRADO',
-        };
-
         $rutaLogoEcosaba = public_path('images/logos/ecosaba.png');
         $rutaLogoAgentes = public_path('images/logos/agentes-micoope.png');
 
@@ -503,13 +497,6 @@
         .summary-difference {
             margin-top: 8pt;
             font-size: 9pt;
-        }
-
-        .difference-status {
-            margin-top: 3pt;
-            font-size: 5.5pt;
-            font-weight: 700;
-            text-align: right;
         }
 
         /* OBSERVACIONES Y CALIFICACIÓN */

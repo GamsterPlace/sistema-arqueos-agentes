@@ -3,151 +3,264 @@
 @section('title', 'Auditoría del Sistema')
 @section('module-title', 'Auditoría del Sistema')
 
+@push('styles')
+<style>
+    .system-audit-page{max-width:1550px;margin:0 auto}
+    .module-heading{display:flex;align-items:center;gap:15px}
+    .module-icon{width:54px;height:54px;flex:0 0 54px;display:flex;align-items:center;justify-content:center;border-radius:16px;color:#fff;background:linear-gradient(145deg,var(--azul-principal),var(--azul-profundo));box-shadow:0 10px 24px rgba(22,76,150,.18)}
+    .module-icon svg,.summary-icon svg,.filter-icon svg,.panel-icon svg,.action-btn svg,.empty-icon svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .module-icon svg{width:26px;height:26px}
+    .summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}
+    .summary-card{min-height:108px;display:flex;align-items:center;gap:14px;padding:17px;border:1px solid #dfe7ee;border-radius:16px;background:#fff;box-shadow:0 7px 20px rgba(28,64,92,.045)}
+    .summary-icon{width:44px;height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:center;border-radius:13px;color:var(--azul-principal);background:#edf4fb}
+    .summary-card.today .summary-icon{color:var(--verde-oscuro);background:#eaf8f1}
+    .summary-card.users .summary-icon{color:#725aa5;background:#f3effb}
+    .summary-card.modules .summary-icon{color:#9a7100;background:#fff7df}
+    .summary-icon svg{width:21px;height:21px}
+    .summary-label{display:block;margin-bottom:4px;color:var(--texto-secundario);font-size:10px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+    .summary-value{display:block;color:var(--azul-profundo);font-size:24px;font-weight:800;line-height:1}
+    .filter-panel{margin-bottom:20px;overflow:hidden;border:1px solid #dfe7ee;border-radius:18px;background:#fff;box-shadow:0 8px 24px rgba(28,64,92,.045)}
+    .filter-heading{display:flex;align-items:center;gap:11px;padding:15px 18px;border-bottom:1px solid #e6edf2;background:#fbfcfd}
+    .filter-icon,.panel-icon{width:37px;height:37px;flex:0 0 37px;display:flex;align-items:center;justify-content:center;border-radius:10px;color:var(--azul-principal);background:#edf4fb}
+    .filter-icon svg,.panel-icon svg{width:18px;height:18px}
+    .filter-heading h3,.panel-title h3{margin:0;color:var(--azul-profundo);font-size:15px}
+    .filter-heading p,.panel-title p{margin:2px 0 0;color:var(--texto-secundario);font-size:12px}
+    .filter-body{padding:17px 18px}
+    .filter-grid{display:grid;grid-template-columns:1.35fr repeat(3,1fr);gap:11px}
+    .filter-grid-secondary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin-top:11px}
+    .field-group label{display:block;margin:0 0 6px;color:#536c7f;font-size:10px;font-weight:800;letter-spacing:.025em;text-transform:uppercase}
+    .form-control{width:100%;min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;outline:none;background:#fff;color:var(--texto);font:inherit;font-size:12px;transition:.18s ease}
+    .form-control:focus{border-color:#82a9cc;box-shadow:0 0 0 3px rgba(22,76,150,.08)}
+    .filter-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:14px;padding-top:14px;border-top:1px solid #edf1f4}
+    .btn-filter{min-height:39px;display:inline-flex;align-items:center;justify-content:center;padding:0 14px;border:1px solid #d7e1e7;border-radius:10px;background:#f3f6f8;color:#466277;text-decoration:none;font-size:11px;font-weight:800;cursor:pointer}
+    .btn-filter.primary{border-color:var(--azul-principal);background:var(--azul-principal);color:#fff}
+    .table-panel{overflow:hidden;border:1px solid #dfe7ee;border-radius:18px;background:#fff;box-shadow:0 8px 24px rgba(28,64,92,.05)}
+    .table-panel-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 19px;border-bottom:1px solid #e5edf2;background:#fbfcfd}
+    .panel-title{display:flex;align-items:center;gap:11px}
+    .records-count{padding:6px 10px;border:1px solid #dce6ed;border-radius:999px;background:#fff;color:#5c7487;font-size:11px;font-weight:800;white-space:nowrap}
+    .table-responsive{overflow-x:auto}
+    .data-table{width:100%;min-width:1250px;border-collapse:collapse}
+    .data-table th{padding:12px 13px;border-bottom:1px solid #dfe7ee;background:#f7f9fb;color:#60788b;font-size:10.5px;font-weight:800;letter-spacing:.035em;text-align:left;text-transform:uppercase;white-space:nowrap}
+    .data-table td{padding:13px;border-bottom:1px solid #edf1f4;color:var(--texto);font-size:12px;vertical-align:middle}
+    .data-table tbody tr:hover{background:#fafcfd}.data-table tbody tr:last-child td{border-bottom:0}
+    .date-value{display:block;color:var(--texto);font-weight:700;white-space:nowrap}
+    .date-time{display:block;margin-top:2px;color:var(--texto-secundario);font-size:10.5px}
+    .user-name{display:block;min-width:145px;font-weight:700}
+    .role-badge,.module-badge,.action-badge,.table-badge{display:inline-flex;align-items:center;min-height:26px;padding:0 9px;border-radius:999px;font-size:9.5px;font-weight:800;white-space:nowrap}
+    .role-badge{color:#526d82;background:#f1f5f8;border:1px solid #dce5eb}
+    .module-badge{color:#164c96;background:#edf4fb;border:1px solid #d5e4f0}
+    .action-badge{color:#08783d;background:#e9f8f0;border:1px solid #c7ecd8;text-transform:uppercase}
+    .table-badge{color:#725aa5;background:#f3effb;border:1px solid #dfd5f0}
+    .record-id{color:var(--azul-principal);font-weight:800}
+    .description{display:block;max-width:320px;color:#4a6275;line-height:1.45}
+    .actions{white-space:nowrap}
+    .action-btn{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #d5dfe5;border-radius:9px;background:#fff;color:#31536e;text-decoration:none;transition:.2s ease}
+    .action-btn:hover{transform:translateY(-1px);border-color:#9db6c9;background:#f4f8fb;color:var(--azul-principal);box-shadow:0 6px 14px rgba(24,66,99,.1)}
+    .action-btn svg{width:17px;height:17px}
+    .empty-state{padding:48px 20px!important;text-align:center}
+    .empty-icon{width:52px;height:52px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;border-radius:15px;color:#7890a2;background:#f1f5f8}
+    .empty-icon svg{width:23px;height:23px}
+    .empty-state strong{display:block;margin-bottom:4px;color:var(--azul-profundo);font-size:14px}
+    .empty-state span{color:var(--texto-secundario);font-size:12px}
+    .pagination-wrapper{padding:16px 18px;border-top:1px solid #edf1f4}
+    @media(max-width:1100px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:760px){.filter-grid,.filter-grid-secondary{grid-template-columns:1fr}}
+    @media(max-width:560px){.summary-grid{grid-template-columns:1fr}.table-panel-header{align-items:flex-start;flex-direction:column}.filter-actions{flex-direction:column}.btn-filter{width:100%}}
+</style>
+@endpush
+
 @section('content')
-<div class="page-header">
-    <div class="page-title">
-        <h2>Auditoría del Sistema</h2>
-        <p>
-            Consulte la trazabilidad de acciones realizadas dentro del sistema.
-        </p>
-    </div>
-</div>
-
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
-    @foreach([
-        ['Total Registros',$resumen->total],
-        ['Registros Hoy',$resumen->hoy],
-        ['Usuarios con Actividad',$resumen->usuarios],
-        ['Módulos Auditados',$resumen->modulos],
-    ] as [$label,$value])
-        <div style="padding:17px;border:1px solid #e0e8ee;border-radius:18px;background:#fff;">
-            <span style="display:block;color:#758697;font-size:8px;font-weight:800;text-transform:uppercase;">
-                {{ $label }}
-            </span>
-            <strong style="display:block;margin-top:8px;color:#082d55;font-size:23px;">
-                {{ $value }}
-            </strong>
+<div class="system-audit-page">
+    <div class="page-header">
+        <div class="page-title module-heading">
+            <div class="module-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 3 4.5 6v5.5c0 4.8 3.2 8 7.5 9.5 4.3-1.5 7.5-4.7 7.5-9.5V6L12 3Z"></path>
+                    <path d="M9 9h6M9 12h6M9 15h4"></path>
+                </svg>
+            </div>
+            <div>
+                <h2>Auditoría del Sistema</h2>
+                <p>Consulte la trazabilidad de acciones realizadas dentro del sistema.</p>
+            </div>
         </div>
-    @endforeach
-</div>
-
-<form
-    method="GET"
-    action="{{ route('administrador.auditoria-sistema.index') }}"
-    style="padding:18px;border:1px solid #e0e8ee;border-radius:18px;background:#fff;margin-bottom:20px;"
->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
-        <input
-            name="buscar"
-            value="{{ $buscar }}"
-            placeholder="Descripción, usuario, módulo, acción o tabla"
-            style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;"
-        >
-
-        <select name="usuario_id" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
-            <option value="">Todos los Usuarios</option>
-            @foreach($usuarios as $usuario)
-                @php
-                    $nombre = trim(
-                        ($usuario->nombres ?? '')
-                        . ' '
-                        . ($usuario->apellidos ?? '')
-                    );
-                @endphp
-                <option value="{{ $usuario->id }}" @selected($usuarioId === (int)$usuario->id)>
-                    {{ $nombre !== '' ? $nombre : $usuario->usuario }}
-                </option>
-            @endforeach
-        </select>
-
-        <select name="modulo" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
-            <option value="">Todos los Módulos</option>
-            @foreach($modulos as $opcion)
-                <option value="{{ $opcion }}" @selected($modulo === $opcion)>{{ $opcion }}</option>
-            @endforeach
-        </select>
-
-        <select name="accion" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
-            <option value="">Todas las Acciones</option>
-            @foreach($acciones as $opcion)
-                <option value="{{ $opcion }}" @selected($accion === $opcion)>{{ $opcion }}</option>
-            @endforeach
-        </select>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
-        <select name="tabla" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
-            <option value="">Todas las Tablas</option>
-            @foreach($tablas as $opcion)
-                <option value="{{ $opcion }}" @selected($tabla === $opcion)>{{ $opcion }}</option>
-            @endforeach
-        </select>
+    <div class="summary-grid">
+        <article class="summary-card">
+            <div class="summary-icon"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5z"></path><path d="M8 7h8M8 11h8M8 15h5"></path></svg></div>
+            <div><span class="summary-label">Total Registros</span><strong class="summary-value">{{ $resumen->total }}</strong></div>
+        </article>
 
-        <input type="date" name="desde" value="{{ $desde }}" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
-        <input type="date" name="hasta" value="{{ $hasta }}" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
+        <article class="summary-card today">
+            <div class="summary-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg></div>
+            <div><span class="summary-label">Registros Hoy</span><strong class="summary-value">{{ $resumen->hoy }}</strong></div>
+        </article>
+
+        <article class="summary-card users">
+            <div class="summary-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><path d="M3 20v-2a6 6 0 0 1 12 0v2"></path><circle cx="17" cy="9" r="2"></circle><path d="M16 14a5 5 0 0 1 5 5v1"></path></svg></div>
+            <div><span class="summary-label">Usuarios con Actividad</span><strong class="summary-value">{{ $resumen->usuarios }}</strong></div>
+        </article>
+
+        <article class="summary-card modules">
+            <div class="summary-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg></div>
+            <div><span class="summary-label">Módulos Auditados</span><strong class="summary-value">{{ $resumen->modulos }}</strong></div>
+        </article>
     </div>
 
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px;">
-        <a href="{{ route('administrador.auditoria-sistema.index') }}" style="padding:10px 14px;border-radius:10px;background:#edf2f5;color:#3d596f;text-decoration:none;font-size:10px;font-weight:800;">Limpiar</a>
-        <button type="submit" style="padding:10px 14px;border:0;border-radius:10px;background:#164c96;color:#fff;font-size:10px;font-weight:800;">Aplicar Filtros</button>
-    </div>
-</form>
+    <form method="GET" action="{{ route('administrador.auditoria-sistema.index') }}" class="filter-panel">
+        <div class="filter-heading">
+            <div class="filter-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16l-6 7v5l-4 2v-7L4 5Z"></path></svg></div>
+            <div>
+                <h3>Filtros de Trazabilidad</h3>
+                <p>Busque actividad por usuario, módulo, acción, tabla o período.</p>
+            </div>
+        </div>
 
-<div style="overflow:hidden;border:1px solid #e0e8ee;border-radius:18px;background:#fff;">
-    <div style="overflow-x:auto;">
-        <table style="width:100%;min-width:1200px;border-collapse:collapse;">
-            <thead>
-                <tr style="background:#f7f9fb;">
-                    <th style="padding:12px;">Fecha</th>
-                    <th style="padding:12px;">Usuario</th>
-                    <th style="padding:12px;">Rol</th>
-                    <th style="padding:12px;">Módulo</th>
-                    <th style="padding:12px;">Acción</th>
-                    <th style="padding:12px;">Tabla</th>
-                    <th style="padding:12px;">Registro</th>
-                    <th style="padding:12px;">Descripción</th>
-                    <th style="padding:12px;">Acción</th>
-                </tr>
-            </thead>
+        <div class="filter-body">
+            <div class="filter-grid">
+                <div class="field-group">
+                    <label for="buscar">Buscar</label>
+                    <input id="buscar" class="form-control" name="buscar" value="{{ $buscar }}" placeholder="Descripción, usuario, módulo, acción o tabla">
+                </div>
 
-            <tbody>
-                @forelse($registros as $registro)
-                    @php
-                        $nombre = trim(
-                            ($registro->nombres ?? '')
-                            . ' '
-                            . ($registro->apellidos ?? '')
-                        );
-                    @endphp
+                <div class="field-group">
+                    <label for="usuario_id">Usuario</label>
+                    <select id="usuario_id" class="form-control" name="usuario_id">
+                        <option value="">Todos los Usuarios</option>
+                        @foreach($usuarios as $usuario)
+                            @php $nombre = trim(($usuario->nombres ?? '') . ' ' . ($usuario->apellidos ?? '')); @endphp
+                            <option value="{{ $usuario->id }}" @selected($usuarioId === (int) $usuario->id)>
+                                {{ $nombre !== '' ? $nombre : $usuario->usuario }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-                    <tr style="border-top:1px solid #edf1f4;">
-                        <td style="padding:12px;">{{ \Carbon\Carbon::parse($registro->created_at)->format('d/m/Y H:i:s') }}</td>
-                        <td style="padding:12px;">{{ $nombre !== '' ? $nombre : ($registro->usuario ?? 'Sistema') }}</td>
-                        <td style="padding:12px;">{{ $registro->rol_nombre ?? '—' }}</td>
-                        <td style="padding:12px;">{{ $registro->modulo }}</td>
-                        <td style="padding:12px;">{{ $registro->accion }}</td>
-                        <td style="padding:12px;">{{ $registro->tabla_afectada ?? '—' }}</td>
-                        <td style="padding:12px;">{{ $registro->registro_id ?? '—' }}</td>
-                        <td style="padding:12px;">{{ \Illuminate\Support\Str::limit($registro->descripcion,90) }}</td>
-                        <td style="padding:12px;">
-                            <a href="{{ route('administrador.auditoria-sistema.show',$registro->id) }}" style="padding:8px 10px;border-radius:8px;background:#edf2f5;color:#31536e;text-decoration:none;font-size:9px;font-weight:800;">Ver detalle</a>
-                        </td>
-                    </tr>
-                @empty
+                <div class="field-group">
+                    <label for="modulo">Módulo</label>
+                    <select id="modulo" class="form-control" name="modulo">
+                        <option value="">Todos los Módulos</option>
+                        @foreach($modulos as $opcion)
+                            <option value="{{ $opcion }}" @selected($modulo === $opcion)>{{ $opcion }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="field-group">
+                    <label for="accion">Acción</label>
+                    <select id="accion" class="form-control" name="accion">
+                        <option value="">Todas las Acciones</option>
+                        @foreach($acciones as $opcion)
+                            <option value="{{ $opcion }}" @selected($accion === $opcion)>{{ $opcion }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="filter-grid-secondary">
+                <div class="field-group">
+                    <label for="tabla">Tabla</label>
+                    <select id="tabla" class="form-control" name="tabla">
+                        <option value="">Todas las Tablas</option>
+                        @foreach($tablas as $opcion)
+                            <option value="{{ $opcion }}" @selected($tabla === $opcion)>{{ $opcion }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="field-group">
+                    <label for="desde">Desde</label>
+                    <input id="desde" type="date" class="form-control" name="desde" value="{{ $desde }}">
+                </div>
+
+                <div class="field-group">
+                    <label for="hasta">Hasta</label>
+                    <input id="hasta" type="date" class="form-control" name="hasta" value="{{ $hasta }}">
+                </div>
+            </div>
+
+            <div class="filter-actions">
+                <a href="{{ route('administrador.auditoria-sistema.index') }}" class="btn-filter">Limpiar</a>
+                <button type="submit" class="btn-filter primary">Aplicar Filtros</button>
+            </div>
+        </div>
+    </form>
+
+    <section class="table-panel">
+        <div class="table-panel-header">
+            <div class="panel-title">
+                <div class="panel-icon"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5z"></path><path d="M8 7h8M8 11h8M8 15h5"></path></svg></div>
+                <div>
+                    <h3>Registro de Actividad</h3>
+                    <p>Historial de acciones registradas para control y trazabilidad.</p>
+                </div>
+            </div>
+            <span class="records-count">{{ $registros->total() }} {{ $registros->total() === 1 ? 'registro' : 'registros' }}</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
                     <tr>
-                        <td colspan="9" style="padding:35px;text-align:center;">
-                            No existen registros de auditoría.
-                        </td>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                        <th>Rol</th>
+                        <th>Módulo</th>
+                        <th>Acción</th>
+                        <th>Tabla</th>
+                        <th>Registro</th>
+                        <th>Descripción</th>
+                        <th>Detalle</th>
                     </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    @if($registros->hasPages())
-        <div style="padding:16px 18px;">
-            {{ $registros->links() }}
+                </thead>
+                <tbody>
+                    @forelse($registros as $registro)
+                        @php
+                            $nombre = trim(($registro->nombres ?? '') . ' ' . ($registro->apellidos ?? ''));
+                            $fechaRegistro = \Carbon\Carbon::parse($registro->created_at);
+                        @endphp
+                        <tr>
+                            <td>
+                                <span class="date-value">{{ $fechaRegistro->format('d/m/Y') }}</span>
+                                <span class="date-time">{{ $fechaRegistro->format('H:i:s') }}</span>
+                            </td>
+                            <td><span class="user-name">{{ $nombre !== '' ? $nombre : ($registro->usuario ?? 'Sistema') }}</span></td>
+                            <td><span class="role-badge">{{ $registro->rol_nombre ?? '—' }}</span></td>
+                            <td><span class="module-badge">{{ $registro->modulo }}</span></td>
+                            <td><span class="action-badge">{{ $registro->accion }}</span></td>
+                            <td><span class="table-badge">{{ $registro->tabla_afectada ?? '—' }}</span></td>
+                            <td><span class="record-id">{{ $registro->registro_id ?? '—' }}</span></td>
+                            <td><span class="description">{{ \Illuminate\Support\Str::limit($registro->descripcion, 90) }}</span></td>
+                            <td class="actions">
+                                <a
+                                    href="{{ route('administrador.auditoria-sistema.show', $registro->id) }}"
+                                    class="action-btn"
+                                    title="Ver detalle"
+                                    aria-label="Ver detalle"
+                                >
+                                    <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.8"></circle></svg>
+                                </a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="9" class="empty-state">
+                                <div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg></div>
+                                <strong>No existen registros de auditoría</strong>
+                                <span>La actividad registrada por el sistema aparecerá en esta sección.</span>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
-    @endif
+
+        @if($registros->hasPages())
+            <div class="pagination-wrapper">
+                {{ $registros->links() }}
+            </div>
+        @endif
+    </section>
 </div>
 @endsection

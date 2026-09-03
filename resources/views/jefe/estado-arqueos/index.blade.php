@@ -84,7 +84,15 @@
         border-radius: 10px;
         background: #ffffff;
         color: #30485b;
+        font-size: 11px;
         outline: none;
+        box-sizing: border-box;
+        transition: .2s ease;
+    }
+
+    .form-control:focus {
+        border-color: #8eb0cb;
+        box-shadow: 0 0 0 3px rgba(22, 76, 150, .08);
     }
 
     .filters-actions {
@@ -163,6 +171,14 @@
         text-transform: uppercase;
     }
 
+    .status-table tbody tr {
+        transition: background .15s ease;
+    }
+
+    .status-table tbody tr:hover {
+        background: #fbfdfe;
+    }
+
     .status-table td strong {
         color: #173b59;
     }
@@ -203,23 +219,52 @@
         color: #596a78;
     }
 
-    .actions {
-        display: flex;
-        gap: 7px;
+    .actions-cell {
+        white-space: nowrap;
     }
 
-    .action-link {
+    .table-actions {
         display: inline-flex;
         align-items: center;
-        min-height: 34px;
-        padding: 0 10px;
+        gap: 8px;
+    }
+
+    .icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
         border: 1px solid #d5dfe5;
         border-radius: 9px;
         background: #ffffff;
         color: #31536e;
-        font-size: 9px;
-        font-weight: 800;
-        white-space: nowrap;
+        text-decoration: none;
+        transition: .2s ease;
+    }
+
+    .icon-button:hover {
+        transform: translateY(-1px);
+        border-color: #9db6c9;
+        background: #f4f8fb;
+        color: #164c96;
+        box-shadow: 0 6px 14px rgba(24, 66, 99, .10);
+    }
+
+    .icon-button.secondary {
+        border-color: #c8d7e3;
+        background: #edf5fb;
+        color: #164c96;
+    }
+
+    .icon-button svg {
+        width: 17px;
+        height: 17px;
+        stroke: currentColor;
+        stroke-width: 1.9;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
     }
 
     .empty-state {
@@ -367,7 +412,7 @@
                     >
                         {{ $nombrePromotor !== ''
                             ? $nombrePromotor
-                            : $promotor->nombre_usuario }}
+                            : $promotor->usuario }}
                     </option>
                 @endforeach
             </select>
@@ -487,28 +532,39 @@
                                 </span>
                             </td>
                             <td>{{ $agente->numero_arqueo ?: '—' }}</td>
-                            <td>
-                                <div class="actions">
+                            <td class="actions-cell">
+                                <div class="table-actions">
+
                                     <a
-                                        href="{{ url(
-                                            '/jefe-agentes/arqueos-agentes'
-                                            . '?agente_id='
-                                            . $agente->id
+                                        href="{{ route(
+                                            'jefe.arqueos-agentes.index',
+                                            ['agente_id' => $agente->id]
                                         ) }}"
-                                        class="action-link"
+                                        class="icon-button"
+                                        title="Ver arqueos"
+                                        aria-label="Ver arqueos del agente"
                                     >
-                                        Ver arqueos
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                            <circle cx="12" cy="12" r="2.8"></circle>
+                                        </svg>
                                     </a>
 
                                     <a
-                                        href="{{ url(
-                                            '/jefe-agentes/agentes/'
-                                            . $agente->id
+                                        href="{{ route(
+                                            'jefe.agentes.show',
+                                            $agente->id
                                         ) }}"
-                                        class="action-link"
+                                        class="icon-button secondary"
+                                        title="Ver agente"
+                                        aria-label="Ver información del agente"
                                     >
-                                        Ver agente
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <circle cx="12" cy="8" r="4"></circle>
+                                            <path d="M4 21a8 8 0 0 1 16 0"></path>
+                                        </svg>
                                     </a>
+
                                 </div>
                             </td>
                         </tr>

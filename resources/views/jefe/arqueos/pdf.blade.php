@@ -57,6 +57,28 @@
             ->where('valida', 1)
             ->first();
 
+        $firmaValidador = \Illuminate\Support\Facades\DB::table('firmas_arqueos')
+            ->where('arqueo_id', $arqueo->id)
+            ->where('tipo_firma', 'VALIDADOR')
+            ->where('valida', 1)
+            ->first();
+
+        $esVisitaPromotor = $arqueo->tipo === 'VISITA_PROMOTOR';
+
+        $firmaIzquierda = $esVisitaPromotor
+            ? $firmaValidador
+            : $firmaRealizador;
+
+        $firmaDerecha = $firmaCertificador;
+
+        $etiquetaIzquierda = $esVisitaPromotor
+            ? 'Validado Por:<br>Propietario o Receptor Pagador'
+            : 'Elaborado Por:<br>Propietario o Receptor Pagador';
+
+        $etiquetaDerecha = $esVisitaPromotor
+            ? 'Certificado Por:<br>Jefe de Agentes'
+            : 'Revisado Por:<br>Promotor Agentes MICOOPE';
+
 
         $rutaLogoEcosaba = public_path('images/logos/ecosaba.png');
         $rutaLogoAgentesMicoope = public_path('images/logos/agentes-micoope.png');
@@ -1000,18 +1022,18 @@
     <div class="absolute signatures">
         <div class="signature signature-agent">
             <div class="electronic-signature">
-                @if ($firmaRealizador)
+                @if ($firmaIzquierda)
                     <div class="electronic-signature-name">
-                        {{ trim($firmaRealizador->nombres_historicos . ' ' . $firmaRealizador->apellidos_historicos) }}
+                        {{ trim($firmaIzquierda->nombres_historicos . ' ' . $firmaIzquierda->apellidos_historicos) }}
                     </div>
 
                     <div class="electronic-signature-meta">
                         Firmado electrónicamente el
-                        {{ \Carbon\Carbon::parse($firmaRealizador->fecha_firma)->format('d/m/Y H:i') }}
+                        {{ \Carbon\Carbon::parse($firmaIzquierda->fecha_firma)->format('d/m/Y H:i') }}
                     </div>
 
                     <div class="electronic-signature-code">
-                        Código: {{ strtoupper(substr($firmaRealizador->firma_electronica, 0, 20)) }}
+                        Código: {{ strtoupper(substr($firmaIzquierda->firma_electronica, 0, 20)) }}
                     </div>
                 @else
                     <div class="signature-pending">
@@ -1023,8 +1045,7 @@
             <div class="signature-line"></div>
 
             <div class="signature-label">
-                Elaborado Por:<br>
-                Propietario o Receptor Pagador
+                {!! $etiquetaIzquierda !!}
             </div>
         </div>
 
@@ -1053,8 +1074,7 @@
             <div class="signature-line"></div>
 
             <div class="signature-label">
-                Revisado Por:<br>
-                Promotor Agentes MICOOPE
+                {!! $etiquetaDerecha !!}
             </div>
         </div>
     </div>

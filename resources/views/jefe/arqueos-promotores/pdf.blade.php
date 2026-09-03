@@ -44,31 +44,29 @@
             (string) $arqueo->numero_arqueo
         );
 
-        $firmaPromotor = \Illuminate\Support\Facades\DB::table('firmas_arqueos')
-            ->where('arqueo_id', $arqueo->id)
-            ->where('tipo_firma', 'REALIZADOR')
-            ->where('valida', 1)
-            ->first();
+        /*
+         * Flujo oficial del arqueo realizado por Promotor:
+         * REALIZADOR   = Promotor
+         * VALIDADOR    = Agente
+         * CERTIFICADOR = Jefe de Agentes
+         */
+        $firmaPromotor = collect($arqueo->firmas ?? [])
+            ->first(fn ($firma) =>
+                data_get($firma, 'tipo_firma') === 'REALIZADOR'
+                && (int) data_get($firma, 'valida') === 1
+            );
 
-        $firmaAgente = \Illuminate\Support\Facades\DB::table('firmas_arqueos')
-            ->where('arqueo_id', $arqueo->id)
-            ->where('tipo_firma', 'VALIDADOR')
-            ->where('valida', 1)
-            ->first();
+        $firmaAgente = collect($arqueo->firmas ?? [])
+            ->first(fn ($firma) =>
+                data_get($firma, 'tipo_firma') === 'VALIDADOR'
+                && (int) data_get($firma, 'valida') === 1
+            );
 
-        $firmaJefe = \Illuminate\Support\Facades\DB::table('firmas_arqueos')
-            ->where('arqueo_id', $arqueo->id)
-            ->where('tipo_firma', 'CERTIFICADOR')
-            ->where('valida', 1)
-            ->first();
-
-        $nombrePromotor = $firmaPromotor
-            ? trim(
-                $firmaPromotor->nombres_historicos
-                . ' '
-                . $firmaPromotor->apellidos_historicos
-            )
-            : '';
+        $firmaJefe = collect($arqueo->firmas ?? [])
+            ->first(fn ($firma) =>
+                data_get($firma, 'tipo_firma') === 'CERTIFICADOR'
+                && (int) data_get($firma, 'valida') === 1
+            );
 
         $rutaLogoEcosaba = public_path('images/logos/ecosaba.png');
         $rutaLogoAgentes = public_path('images/logos/agentes-micoope.png');
@@ -94,6 +92,50 @@
         $logoAgentes = 'data:image/png;base64,' . base64_encode(
             file_get_contents($rutaLogoAgentes)
         );
+
+        $textoObservaciones = wordwrap(
+            trim(
+                (string) (
+                    $arqueo->observaciones
+                    ?: 'Sin observaciones registradas.'
+                )
+            ),
+            150,
+            "\n",
+            false
+        );
+
+        $lineasObservaciones = array_slice(
+            explode("\n", $textoObservaciones),
+            0,
+            2
+        );
+
+        while (count($lineasObservaciones) < 2) {
+            $lineasObservaciones[] = '';
+        }
+
+        $textoCalificacion = wordwrap(
+            trim(
+                (string) (
+                    $arqueo->certificacion
+                    ?: 'Sin calificación registrada.'
+                )
+            ),
+            150,
+            "\n",
+            false
+        );
+
+        $lineasCalificacion = array_slice(
+            explode("\n", $textoCalificacion),
+            0,
+            3
+        );
+
+        while (count($lineasCalificacion) < 3) {
+            $lineasCalificacion[] = '';
+        }
     @endphp
 
     <style>
@@ -131,16 +173,6 @@
 
         .absolute {
             position: absolute;
-        }
-
-        .field-line {
-            display: inline-block;
-            height: 13pt;
-            padding: 0 2pt 1pt;
-            overflow: hidden;
-            border-bottom: .65pt solid #333333;
-            vertical-align: bottom;
-            white-space: nowrap;
         }
 
         /* ENCABEZADO */
@@ -227,7 +259,6 @@
 
         .header-row .label-cell {
             width: 1%;
-            padding: 0;
             line-height: 13pt;
             text-align: left;
             white-space: nowrap;
@@ -238,7 +269,7 @@
             overflow: hidden;
             border-bottom: .65pt solid #333333;
             line-height: 12pt;
-            text-align:center;
+            text-align: center;
             white-space: nowrap;
         }
 
@@ -457,7 +488,7 @@
             text-align: right;
         }
 
-        /* TOTALES DERECHA */
+        /* RESUMEN */
 
         .summary {
             top: 542pt;
@@ -499,7 +530,7 @@
             font-size: 9pt;
         }
 
-        /* OBSERVACIONES Y CALIFICACIÓN */
+        /* OBSERVACIONES */
 
         .observations {
             position: absolute;
@@ -530,7 +561,6 @@
             font-size: 6.4pt;
             line-height: 10.6pt;
             text-align: justify;
-            text-align-last: left;
             white-space: normal;
         }
 
@@ -549,17 +579,9 @@
             text-align: center;
         }
 
-        .signature-agent {
-            left: 0;
-        }
-
-        .signature-promoter {
-            left: 194pt;
-        }
-
-        .signature-chief {
-            right: 0;
-        }
+        .signature-agent { left: 0; }
+        .signature-promoter { left: 194pt; }
+        .signature-chief { right: 0; }
 
         .electronic-signature {
             width: 100%;
@@ -615,11 +637,7 @@
 <body>
 <div class="page">
 
-    <img
-        class="logo-ecosaba"
-        src="{{ $logoEcosaba }}"
-        alt="ECOSABA"
-    >
+    <img class="logo-ecosaba" src="{{ $logoEcosaba }}" alt="ECOSABA">
 
     <div class="absolute main-title">
         Arqueo y Corte de Caja
@@ -636,28 +654,19 @@
     <div class="header-fields">
         <table class="header-row">
             <tr>
-                <td class="spacer-cell" style="width: 141pt;"></td>
+                <td class="spacer-cell" style="width:141pt;"></td>
 
-                <td class="label-cell">
-                    Fecha:
-                </td>
-
-                <td class="value-cell" style="width: 76pt;">
+                <td class="label-cell">Fecha:</td>
+                <td class="value-cell" style="width:76pt;">
                     {{ $fechaArqueo }}
                 </td>
 
-                <td class="label-cell">
-                    Hora inicio:
-                </td>
-
-                <td class="value-cell" style="width: 63pt;">
+                <td class="label-cell">Hora inicio:</td>
+                <td class="value-cell" style="width:63pt;">
                     {{ $horaInicio }}
                 </td>
 
-                <td class="label-cell">
-                    Hora finalización:
-                </td>
-
+                <td class="label-cell">Hora finalización:</td>
                 <td class="value-cell">
                     {{ $horaFin }}
                 </td>
@@ -666,26 +675,17 @@
 
         <table class="header-row">
             <tr>
-                <td class="label-cell">
-                    Agente No.:
-                </td>
-
-                <td class="value-cell" style="width: 58pt;">
+                <td class="label-cell">Agente No.:</td>
+                <td class="value-cell" style="width:58pt;">
                     {{ $arqueo->codigo_agente_historico }}
                 </td>
 
-                <td class="label-cell">
-                    Nombre Negocio:
-                </td>
-
-                <td class="value-cell" style="width: 130pt;">
+                <td class="label-cell">Nombre Negocio:</td>
+                <td class="value-cell" style="width:130pt;">
                     {{ $arqueo->nombre_negocio_historico }}
                 </td>
 
-                <td class="label-cell">
-                    Agente MICOOPE:
-                </td>
-
+                <td class="label-cell">Agente MICOOPE:</td>
                 <td class="value-cell">
                     {{ $arqueo->nombre_negocio_historico }}
                 </td>
@@ -705,62 +705,31 @@
         </table>
     </div>
 
-    <img
-        class="watermark-logo"
-        src="{{ $logoAgentes }}"
-        alt=""
-    >
+    <img class="watermark-logo" src="{{ $logoAgentes }}" alt="">
 
-    <div class="absolute section-title bills-title">
-        Billetes
-    </div>
-
-    <div class="absolute section-subtitle bills-subtitle">
-        Denominación
-    </div>
-
-    <div class="absolute section-subtitle bill-qty-title">
-        Cantidad
-    </div>
-
-    <div class="absolute section-subtitle bill-sub-title">
-        Sub-total
-    </div>
-
-    <div class="absolute section-subtitle bill-total-title">
-        Totales
-    </div>
+    <div class="absolute section-title bills-title">Billetes</div>
+    <div class="absolute section-subtitle bills-subtitle">Denominación</div>
+    <div class="absolute section-subtitle bill-qty-title">Cantidad</div>
+    <div class="absolute section-subtitle bill-sub-title">Sub-total</div>
+    <div class="absolute section-subtitle bill-total-title">Totales</div>
 
     @foreach ($denominacionesBilletes as $index => $denominacion)
         @php
-            $clave = number_format(
-                (float) $denominacion,
-                2,
-                '.',
-                ''
-            );
-
+            $clave = number_format((float) $denominacion, 2, '.', '');
             $detalle = $billetesMapa->get($clave);
             $cantidad = (int) data_get($detalle, 'cantidad', 0);
             $subtotal = (float) data_get($detalle, 'subtotal', 0);
             $top = 247 + ($index * 13);
         @endphp
 
-        <div
-            class="absolute money-row bill-row"
-            style="top: {{ $top }}pt;"
-        >
+        <div class="absolute money-row bill-row" style="top:{{ $top }}pt;">
             <span class="bill-denomination">
                 Q. {{ number_format((float) $denominacion, 2) }}
             </span>
 
-            <span class="bill-quantity">
-                {{ $cantidad }}
-            </span>
+            <span class="bill-quantity">{{ $cantidad }}</span>
 
-            <span class="bill-prefix">
-                Q.
-            </span>
+            <span class="bill-prefix">Q.</span>
 
             <span class="bill-subtotal">
                 {{ number_format($subtotal, 2) }}
@@ -770,58 +739,33 @@
 
     <div class="absolute bill-total">
         <span class="prefix">Q.</span>
-
         <span class="value">
             {{ number_format((float) $arqueo->total_billetes, 2) }}
         </span>
     </div>
 
-    <div class="absolute section-title coins-title">
-        Monedas
-    </div>
-
-    <div class="absolute section-subtitle coins-subtitle">
-        Denominación
-    </div>
-
-    <div class="absolute section-subtitle coin-qty-title">
-        Cantidad
-    </div>
-
-    <div class="absolute section-subtitle coin-sub-title">
-        Sub-total
-    </div>
+    <div class="absolute section-title coins-title">Monedas</div>
+    <div class="absolute section-subtitle coins-subtitle">Denominación</div>
+    <div class="absolute section-subtitle coin-qty-title">Cantidad</div>
+    <div class="absolute section-subtitle coin-sub-title">Sub-total</div>
 
     @foreach ($denominacionesMonedas as $index => $denominacion)
         @php
-            $clave = number_format(
-                (float) $denominacion,
-                2,
-                '.',
-                ''
-            );
-
+            $clave = number_format((float) $denominacion, 2, '.', '');
             $detalle = $monedasMapa->get($clave);
             $cantidad = (int) data_get($detalle, 'cantidad', 0);
             $subtotal = (float) data_get($detalle, 'subtotal', 0);
             $top = 426 + ($index * 13);
         @endphp
 
-        <div
-            class="absolute money-row coin-row"
-            style="top: {{ $top }}pt;"
-        >
+        <div class="absolute money-row coin-row" style="top:{{ $top }}pt;">
             <span class="coin-denomination">
                 Q. {{ number_format((float) $denominacion, 2) }}
             </span>
 
-            <span class="coin-quantity">
-                {{ $cantidad }}
-            </span>
+            <span class="coin-quantity">{{ $cantidad }}</span>
 
-            <span class="coin-prefix">
-                Q.
-            </span>
+            <span class="coin-prefix">Q.</span>
 
             <span class="coin-subtotal">
                 {{ number_format($subtotal, 2) }}
@@ -831,7 +775,6 @@
 
     <div class="absolute coin-total">
         <span class="prefix">Q.</span>
-
         <span class="value">
             {{ number_format((float) $arqueo->total_monedas, 2) }}
         </span>
@@ -846,138 +789,78 @@
 
     <div class="absolute summary">
         <div class="summary-row">
-            <span class="summary-label">
-                Saldo del Sistema
-            </span>
-
+            <span class="summary-label">Saldo del Sistema</span>
             <span class="summary-prefix">Q.</span>
-
             <span class="summary-value">
                 {{ number_format((float) $arqueo->saldo_sistema, 2) }}
             </span>
         </div>
 
         <div class="summary-row">
-            <span class="summary-label">
-                Total Arqueado
-            </span>
-
+            <span class="summary-label">Total Arqueado</span>
             <span class="summary-prefix">Q.</span>
-
             <span class="summary-value">
                 {{ number_format((float) $arqueo->total_arqueado, 2) }}
             </span>
         </div>
 
         <div class="summary-row summary-difference">
-            <span class="summary-label">
-                DIFERENCIA
-            </span>
-
+            <span class="summary-label">DIFERENCIA</span>
             <span class="summary-prefix">Q.</span>
-
             <span class="summary-value">
                 {{ number_format((float) $arqueo->diferencia, 2) }}
             </span>
         </div>
-
-
     </div>
 
-    @php
-        $textoObservaciones = wordwrap(
-            trim(
-                (string) (
-                    $arqueo->observaciones
-                    ?: 'Sin observaciones registradas.'
-                )
-            ),
-            150,
-            "\n",
-            false
-        );
-
-        $lineasObservaciones = array_slice(
-            explode("\n", $textoObservaciones),
-            0,
-            2
-        );
-
-        while (count($lineasObservaciones) < 2) {
-            $lineasObservaciones[] = '';
-        }
-
-        $textoCalificacion = wordwrap(
-            trim(
-                (string) (
-                    $arqueo->certificacion
-                    ?: 'Sin calificación registrada.'
-                )
-            ),
-            150,
-            "\n",
-            false
-        );
-
-        $lineasCalificacion = array_slice(
-            explode("\n", $textoCalificacion),
-            0,
-            3
-        );
-
-        while (count($lineasCalificacion) < 3) {
-            $lineasCalificacion[] = '';
-        }
-    @endphp
-
     <div class="observations">
-        <div class="text-title">
-            Observaciones:
-        </div>
+        <div class="text-title">Observaciones:</div>
 
         @foreach ($lineasObservaciones as $linea)
-            <div class="text-line">
-                {{ $linea }}
-            </div>
+            <div class="text-line">{{ $linea }}</div>
         @endforeach
     </div>
 
     <div class="qualification">
-        <div class="text-title">
-            Calificación:
-        </div>
+        <div class="text-title">Calificación:</div>
 
         @foreach ($lineasCalificacion as $linea)
-            <div class="text-line">
-                {{ $linea }}
-            </div>
+            <div class="text-line">{{ $linea }}</div>
         @endforeach
     </div>
 
     <div class="absolute signatures">
+        {{-- FIRMA DEL AGENTE / VALIDADOR --}}
         <div class="signature signature-agent">
             <div class="electronic-signature">
                 @if ($firmaAgente)
                     <div class="electronic-signature-name">
                         {{ trim(
-                            $firmaAgente->nombres_historicos
+                            data_get($firmaAgente, 'nombres_historicos', '')
                             . ' '
-                            . $firmaAgente->apellidos_historicos
+                            . data_get($firmaAgente, 'apellidos_historicos', '')
                         ) }}
                     </div>
 
                     <div class="electronic-signature-meta">
                         Firmado electrónicamente:
-                        {{ \Carbon\Carbon::parse(
-                            $firmaAgente->fecha_firma
-                        )->format('d/m/Y H:i') }}
+                        {{ data_get($firmaAgente, 'fecha_firma')
+                            ? \Carbon\Carbon::parse(
+                                data_get($firmaAgente, 'fecha_firma')
+                            )->format('d/m/Y H:i')
+                            : ''
+                        }}
                     </div>
 
                     <div class="electronic-signature-code">
                         Código:
                         {{ strtoupper(
                             substr(
-                                $firmaAgente->firma_electronica,
+                                (string) data_get(
+                                    $firmaAgente,
+                                    'firma_electronica',
+                                    ''
+                                ),
                                 0,
                                 18
                             )
@@ -998,29 +881,37 @@
             </div>
         </div>
 
+        {{-- FIRMA DEL PROMOTOR / REALIZADOR --}}
         <div class="signature signature-promoter">
             <div class="electronic-signature">
                 @if ($firmaPromotor)
                     <div class="electronic-signature-name">
                         {{ trim(
-                            $firmaPromotor->nombres_historicos
+                            data_get($firmaPromotor, 'nombres_historicos', '')
                             . ' '
-                            . $firmaPromotor->apellidos_historicos
+                            . data_get($firmaPromotor, 'apellidos_historicos', '')
                         ) }}
                     </div>
 
                     <div class="electronic-signature-meta">
                         Firmado electrónicamente:
-                        {{ \Carbon\Carbon::parse(
-                            $firmaPromotor->fecha_firma
-                        )->format('d/m/Y H:i') }}
+                        {{ data_get($firmaPromotor, 'fecha_firma')
+                            ? \Carbon\Carbon::parse(
+                                data_get($firmaPromotor, 'fecha_firma')
+                            )->format('d/m/Y H:i')
+                            : ''
+                        }}
                     </div>
 
                     <div class="electronic-signature-code">
                         Código:
                         {{ strtoupper(
                             substr(
-                                $firmaPromotor->firma_electronica,
+                                (string) data_get(
+                                    $firmaPromotor,
+                                    'firma_electronica',
+                                    ''
+                                ),
                                 0,
                                 18
                             )
@@ -1040,29 +931,37 @@
             </div>
         </div>
 
+        {{-- FIRMA DEL JEFE / CERTIFICADOR --}}
         <div class="signature signature-chief">
             <div class="electronic-signature">
                 @if ($firmaJefe)
                     <div class="electronic-signature-name">
                         {{ trim(
-                            $firmaJefe->nombres_historicos
+                            data_get($firmaJefe, 'nombres_historicos', '')
                             . ' '
-                            . $firmaJefe->apellidos_historicos
+                            . data_get($firmaJefe, 'apellidos_historicos', '')
                         ) }}
                     </div>
 
                     <div class="electronic-signature-meta">
                         Firmado electrónicamente:
-                        {{ \Carbon\Carbon::parse(
-                            $firmaJefe->fecha_firma
-                        )->format('d/m/Y H:i') }}
+                        {{ data_get($firmaJefe, 'fecha_firma')
+                            ? \Carbon\Carbon::parse(
+                                data_get($firmaJefe, 'fecha_firma')
+                            )->format('d/m/Y H:i')
+                            : ''
+                        }}
                     </div>
 
                     <div class="electronic-signature-code">
                         Código:
                         {{ strtoupper(
                             substr(
-                                $firmaJefe->firma_electronica,
+                                (string) data_get(
+                                    $firmaJefe,
+                                    'firma_electronica',
+                                    ''
+                                ),
                                 0,
                                 18
                             )

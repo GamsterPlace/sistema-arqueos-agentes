@@ -130,30 +130,52 @@
         white-space: nowrap;
     }
 
-    .action-link {
+    .actions-cell {
+        white-space: nowrap;
+    }
+
+    .table-actions {
         display: inline-flex;
         align-items: center;
-        min-height: 34px;
-        padding: 0 10px;
+        gap: 8px;
+    }
+
+    .icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
         border: 1px solid #d5dfe5;
         border-radius: 9px;
         background: #ffffff;
         color: #31536e;
-        font-size: 9px;
-        font-weight: 800;
         text-decoration: none;
-        white-space: nowrap;
+        transition: .2s ease;
     }
 
-    .action-link.primary {
-        border-color: #cbdceb;
+    .icon-button:hover {
+        transform: translateY(-1px);
+        border-color: #9db6c9;
+        background: #f4f8fb;
+        color: #164c96;
+        box-shadow: 0 6px 14px rgba(24, 66, 99, .10);
+    }
+
+    .icon-button.print {
+        border-color: #c8d7e3;
         background: #edf5fb;
         color: #164c96;
     }
 
-    .actions {
-        display: flex;
-        gap: 7px;
+    .icon-button svg {
+        width: 17px;
+        height: 17px;
+        stroke: currentColor;
+        stroke-width: 1.9;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
     }
 
     .empty-state {
@@ -392,16 +414,22 @@
                                 ) }}
                             </td>
 
-                            <td>
-                                <div class="actions">
+                            <td class="actions-cell">
+                                <div class="table-actions">
+
                                     <a
                                         href="{{ route(
                                             'jefe.arqueos-agentes.show',
                                             $arqueo->id
                                         ) }}"
-                                        class="action-link primary"
+                                        class="icon-button"
+                                        title="Ver detalle"
+                                        aria-label="Ver detalle del arqueo"
                                     >
-                                        Ver
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                            <circle cx="12" cy="12" r="2.8"></circle>
+                                        </svg>
                                     </a>
 
                                     <a
@@ -410,10 +438,18 @@
                                             $arqueo->id
                                         ) }}"
                                         target="_blank"
-                                        class="action-link"
+                                        class="icon-button print"
+                                        title="Imprimir PDF"
+                                        aria-label="Imprimir arqueo en PDF"
                                     >
-                                        Imprimir
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M6 9V3h12v6"></path>
+                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                            <rect x="6" y="14" width="12" height="7"></rect>
+                                            <path d="M18 12h.01"></path>
+                                        </svg>
                                     </a>
+
                                 </div>
                             </td>
                         </tr>

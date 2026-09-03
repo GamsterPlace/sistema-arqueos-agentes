@@ -423,13 +423,20 @@
                         <button
                             type="button"
                             class="action-link primary"
-                            onclick='abrirEditarRegion(@json([
-                                "id" => $region->id,
-                                "nombre" => $region->nombre,
-                            ]))'
+                            onclick="abrirEditarRegion(
+                                {{ $region->id }},
+                                {{ Illuminate\Support\Js::from($region->nombre) }}
+                            )"
                         >
                             Editar
                         </button>
+
+                        <a
+                            href="{{ route('jefe.regiones.rutas', $region->id) }}"
+                            class="action-link"
+                        >
+                            Administrar rutas
+                        </a>
 
                         <a
                             href="{{ route('jefe.agentes-region.index', ['region_id' => $region->id]) }}"
@@ -511,11 +518,11 @@
         modalRegion.classList.add('open');
     }
 
-    function abrirEditarRegion(region) {
-        formRegion.action = updateRegionBaseUrl + '/' + region.id;
+    function abrirEditarRegion(id, nombre) {
+        formRegion.action = updateRegionBaseUrl + '/' + id;
         regionMethod.value = 'PUT';
         modalRegionTitulo.textContent = 'Editar Región';
-        regionNombre.value = region.nombre ?? '';
+        regionNombre.value = nombre ?? '';
         modalRegion.classList.add('open');
     }
 

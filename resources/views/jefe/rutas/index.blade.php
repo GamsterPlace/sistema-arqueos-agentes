@@ -423,21 +423,21 @@
                                 <button
                                     type="button"
                                     class="action-link primary"
-                                    onclick='abrirEditarRuta(@json([
-                                        "id" => $ruta->id,
-                                        "codigo" => $ruta->codigo,
-                                        "nombre" => $ruta->nombre,
-                                        "region_id" => $ruta->region_id,
-                                    ]))'
+                                    onclick="abrirEditarRuta(
+                                        {{ $ruta->id }},
+                                        {{ Illuminate\Support\Js::from($ruta->codigo) }},
+                                        {{ Illuminate\Support\Js::from($ruta->nombre) }},
+                                        {{ $ruta->region_id }}
+                                    )"
                                 >
                                     Editar
                                 </button>
 
                                 <a
-                                    href="{{ route('jefe.agentes-ruta.index', ['ruta_id' => $ruta->id]) }}"
+                                    href="{{ route('jefe.rutas.agentes', $ruta->id) }}"
                                     class="action-link"
                                 >
-                                    Ver agentes
+                                    Administrar agentes
                                 </a>
 
                                 <form
@@ -538,13 +538,13 @@
         modalRuta.classList.add('open');
     }
 
-    function abrirEditarRuta(ruta) {
-        formRuta.action = updateBaseUrl + '/' + ruta.id;
+    function abrirEditarRuta(id, codigo, nombre, regionId) {
+        formRuta.action = updateBaseUrl + '/' + id;
         rutaMethod.value = 'PUT';
         modalRutaTitulo.textContent = 'Editar Ruta';
-        rutaCodigo.value = ruta.codigo ?? '';
-        rutaNombre.value = ruta.nombre ?? '';
-        rutaRegion.value = String(ruta.region_id ?? '');
+        rutaCodigo.value = codigo ?? '';
+        rutaNombre.value = nombre ?? '';
+        rutaRegion.value = String(regionId ?? '');
         modalRuta.classList.add('open');
     }
 

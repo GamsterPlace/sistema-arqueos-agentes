@@ -23,7 +23,6 @@ class ArqueoController extends Controller
         20,
         10,
         5,
-        2,
         1,
     ];
 
@@ -540,7 +539,24 @@ class ArqueoController extends Controller
         foreach (
             $denominaciones as $denominacion
         ) {
-            $clave = (string) $denominacion;
+            /*
+             * IMPORTANTE:
+             * Los inputs de monedas del formulario se envían con dos decimales
+             * (1.00, 0.50, 0.25, 0.10, 0.05). Al convertir un float directamente
+             * a string, PHP transforma 1.00 en "1", 0.50 en "0.5" y 0.10 en "0.1",
+             * por lo que esas cantidades no se encontraban en el request.
+             *
+             * Para billetes mantenemos la clave entera usada por la vista.
+             * Para monedas usamos siempre dos decimales, igual que create.blade.php.
+             */
+            $clave = $tipo === 'MONEDA'
+                ? number_format(
+                    (float) $denominacion,
+                    2,
+                    '.',
+                    ''
+                )
+                : (string) $denominacion;
 
             $cantidad = max(
                 0,

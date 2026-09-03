@@ -18,7 +18,6 @@ class CertificacionController extends Controller
     {
         /** @var Usuario $usuario */
         $usuario = $request->user();
-
         $this->validarJefe($usuario);
 
         $buscar = trim((string) $request->string('buscar'));
@@ -26,70 +25,36 @@ class CertificacionController extends Controller
         $arqueos = DB::table('arqueos as arq')
             ->join('agentes as a', 'a.id', '=', 'arq.agente_id')
             ->join('usuarios as up', 'up.id', '=', 'arq.creado_por')
-            ->leftJoin(
-                'datos_personales as dp',
-                'dp.usuario_id',
-                '=',
-                'up.id'
-            )
+            ->leftJoin('datos_personales as dp', 'dp.usuario_id', '=', 'up.id')
             ->leftJoin('rutas as r', 'r.id', '=', 'a.ruta_id')
             ->leftJoin('regiones as reg', 'reg.id', '=', 'r.region_id')
             ->where('arq.tipo', 'VISITA_PROMOTOR')
             ->where('arq.estado', 'PENDIENTE_CERTIFICACION')
             ->whereExists(function ($query): void {
-                $query
-                    ->selectRaw('1')
+                $query->selectRaw('1')
                     ->from('firmas_arqueos as fv')
                     ->whereColumn('fv.arqueo_id', 'arq.id')
                     ->where('fv.tipo_firma', 'VALIDADOR')
                     ->where('fv.valida', true);
             })
             ->whereNotExists(function ($query): void {
-                $query
-                    ->selectRaw('1')
+                $query->selectRaw('1')
                     ->from('firmas_arqueos as fc')
                     ->whereColumn('fc.arqueo_id', 'arq.id')
                     ->where('fc.tipo_firma', 'CERTIFICADOR')
                     ->where('fc.valida', true);
             })
-            ->when(
-                $buscar !== '',
-                function ($query) use ($buscar): void {
-                    $query->where(function ($subquery) use ($buscar): void {
-                        $subquery
-                            ->where(
-                                'arq.numero_arqueo',
-                                'like',
-                                '%' . $buscar . '%'
-                            )
-                            ->orWhere(
-                                'a.codigo_agente',
-                                'like',
-                                '%' . $buscar . '%'
-                            )
-                            ->orWhere(
-                                'a.nombre_negocio',
-                                'like',
-                                '%' . $buscar . '%'
-                            )
-                            ->orWhere(
-                                'up.usuario',
-                                'like',
-                                '%' . $buscar . '%'
-                            )
-                            ->orWhere(
-                                'dp.nombres',
-                                'like',
-                                '%' . $buscar . '%'
-                            )
-                            ->orWhere(
-                                'dp.apellidos',
-                                'like',
-                                '%' . $buscar . '%'
-                            );
-                    });
-                }
-            )
+            ->when($buscar !== '', function ($query) use ($buscar): void {
+                $query->where(function ($subquery) use ($buscar): void {
+                    $subquery
+                        ->where('arq.numero_arqueo', 'like', '%' . $buscar . '%')
+                        ->orWhere('a.codigo_agente', 'like', '%' . $buscar . '%')
+                        ->orWhere('a.nombre_negocio', 'like', '%' . $buscar . '%')
+                        ->orWhere('up.usuario', 'like', '%' . $buscar . '%')
+                        ->orWhere('dp.nombres', 'like', '%' . $buscar . '%')
+                        ->orWhere('dp.apellidos', 'like', '%' . $buscar . '%');
+                });
+            })
             ->select([
                 'arq.id',
                 'arq.numero_arqueo',
@@ -112,16 +77,14 @@ class CertificacionController extends Controller
             ->where('arq.tipo', 'VISITA_PROMOTOR')
             ->where('arq.estado', 'PENDIENTE_CERTIFICACION')
             ->whereExists(function ($query): void {
-                $query
-                    ->selectRaw('1')
+                $query->selectRaw('1')
                     ->from('firmas_arqueos as fv')
                     ->whereColumn('fv.arqueo_id', 'arq.id')
                     ->where('fv.tipo_firma', 'VALIDADOR')
                     ->where('fv.valida', true);
             })
             ->whereNotExists(function ($query): void {
-                $query
-                    ->selectRaw('1')
+                $query->selectRaw('1')
                     ->from('firmas_arqueos as fc')
                     ->whereColumn('fc.arqueo_id', 'arq.id')
                     ->where('fc.tipo_firma', 'CERTIFICADOR')
@@ -129,11 +92,66 @@ class CertificacionController extends Controller
             })
             ->count();
 
-        return view('jefe.certificaciones.index', [
-            'arqueos' => $arqueos,
-            'buscar' => $buscar,
-            'totalPendientes' => $totalPendientes,
-        ]);
+        return view('jefe.certificaciones.index', compact(
+            'arqueos',
+            'buscar',
+            'totalPendientes'
+        ));
+    }
+
+    public function show(Request $request, Arqueo $arqueo): View
+    {
+        /** @var Usuario $usuario */
+        $usuario = $request->user();
+        $this->validarJefe($usuario);
+
+        abort_if(
+            $arqueo->tipo !== 'VISITA_PROMOTOR',
+            404,
+            'Este arqueo no corresponde a una visita de Promotor.'
+        );
+
+        $arqueo->loadMissing(['detalles', 'firmas']);
+
+        $billetes = $arqueo->detalles
+            ->where('tipo', 'BILLETE')
+            ->sortByDesc('denominacion')
+            ->values();
+
+        $monedas = $arqueo->detalles
+            ->where('tipo', 'MONEDA')
+            ->sortByDesc('denominacion')
+            ->values();
+
+        $firmaPromotor = $arqueo->firmas
+            ->first(fn ($firma) =>
+                $firma->tipo_firma === 'REALIZADOR' && (bool) $firma->valida
+            );
+
+        $firmaAgente = $arqueo->firmas
+            ->first(fn ($firma) =>
+                $firma->tipo_firma === 'VALIDADOR' && (bool) $firma->valida
+            );
+
+        $firmaJefe = $arqueo->firmas
+            ->first(fn ($firma) =>
+                $firma->tipo_firma === 'CERTIFICADOR' && (bool) $firma->valida
+            );
+
+        $puedeCertificar =
+            $arqueo->estado === 'PENDIENTE_CERTIFICACION'
+            && $firmaAgente !== null
+            && $firmaJefe === null;
+
+        return view('jefe.certificaciones.show', compact(
+            'arqueo',
+            'billetes',
+            'monedas',
+            'firmaPromotor',
+            'firmaAgente',
+            'firmaJefe',
+            'puedeCertificar'
+        ));
     }
 
     public function certificar(
@@ -142,190 +160,131 @@ class CertificacionController extends Controller
     ): RedirectResponse {
         /** @var Usuario $usuario */
         $usuario = $request->user();
-
         $this->validarJefe($usuario);
 
         $datos = $request->validate(
-            [
-                'password' => [
-                    'required',
-                    'string',
-                ],
-            ],
-            [
-                'password.required' =>
-                    'Debe ingresar su contraseña para confirmar la certificación.',
-            ]
+            ['password' => ['required', 'string']],
+            ['password.required' =>
+                'Debe ingresar su contraseña para confirmar la certificación.']
         );
 
-        if (! Hash::check(
-            $datos['password'],
-            $usuario->password
-        )) {
+        if (! Hash::check($datos['password'], $usuario->password)) {
             return back()->withErrors([
-                'password' =>
-                    'La contraseña ingresada es incorrecta.',
+                'password' => 'La contraseña ingresada es incorrecta.',
             ]);
         }
 
-        return DB::transaction(
-            function () use (
-                $arqueo,
-                $usuario
-            ): RedirectResponse {
-                $arqueoBloqueado = Arqueo::query()
-                    ->lockForUpdate()
-                    ->findOrFail($arqueo->id);
+        return DB::transaction(function () use ($arqueo, $usuario): RedirectResponse {
+            $arqueoBloqueado = Arqueo::query()
+                ->lockForUpdate()
+                ->findOrFail($arqueo->id);
 
-                abort_if(
-                    $arqueoBloqueado->tipo !== 'VISITA_PROMOTOR',
-                    422,
-                    'Este arqueo no corresponde a un arqueo realizado por Promotor.'
+            abort_if(
+                $arqueoBloqueado->tipo !== 'VISITA_PROMOTOR',
+                422,
+                'Este arqueo no corresponde a un arqueo realizado por Promotor.'
+            );
+
+            abort_if(
+                $arqueoBloqueado->estado !== 'PENDIENTE_CERTIFICACION',
+                422,
+                'El arqueo ya no se encuentra pendiente de certificación.'
+            );
+
+            $firmaAgente = FirmaArqueo::query()
+                ->where('arqueo_id', $arqueoBloqueado->id)
+                ->where('tipo_firma', 'VALIDADOR')
+                ->where('valida', true)
+                ->first();
+
+            abort_if(
+                ! $firmaAgente,
+                422,
+                'El Agente todavía no ha validado y firmado este arqueo.'
+            );
+
+            $firmaExistente = FirmaArqueo::query()
+                ->where('arqueo_id', $arqueoBloqueado->id)
+                ->where('tipo_firma', 'CERTIFICADOR')
+                ->where('valida', true)
+                ->exists();
+
+            abort_if(
+                $firmaExistente,
+                422,
+                'Este arqueo ya posee una certificación válida.'
+            );
+
+            $usuario->loadMissing('datosPersonales');
+            $datosPersonales = $usuario->datosPersonales;
+
+            $nombres = trim((string) (
+                $datosPersonales?->nombres
+                ?? $datosPersonales?->nombre
+                ?? $usuario->usuario
+                ?? 'Jefe de Agentes'
+            ));
+
+            $apellidos = trim((string) (
+                $datosPersonales?->apellidos
+                ?? $datosPersonales?->apellido
+                ?? ''
+            ));
+
+            $contenidoDocumento = json_encode([
+                'arqueo_id' => $arqueoBloqueado->id,
+                'numero_arqueo' => $arqueoBloqueado->numero_arqueo,
+                'agente_id' => $arqueoBloqueado->agente_id,
+                'fecha_arqueo' => optional($arqueoBloqueado->fecha_arqueo)->format('Y-m-d'),
+                'total_arqueado' => $arqueoBloqueado->total_arqueado,
+                'saldo_sistema' => $arqueoBloqueado->saldo_sistema,
+                'diferencia' => $arqueoBloqueado->diferencia,
+                'certificado_por' => $usuario->id,
+                'fecha_firma' => now()->toIso8601String(),
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+            $hashDocumento = hash('sha256', (string) $contenidoDocumento);
+            $firmaElectronica = hash_hmac(
+                'sha256',
+                $hashDocumento,
+                config('app.key')
+            );
+
+            FirmaArqueo::create([
+                'arqueo_id' => $arqueoBloqueado->id,
+                'usuario_id' => $usuario->id,
+                'tipo_firma' => 'CERTIFICADOR',
+                'rol_firmante' => 'jefedeAgentes',
+                'nombres_historicos' => $nombres,
+                'apellidos_historicos' => $apellidos,
+                'hash_documento' => $hashDocumento,
+                'firma_electronica' => $firmaElectronica,
+                'algoritmo' => 'HMAC-SHA256',
+                'version_firma' => 1,
+                'fecha_firma' => now(),
+                'valida' => true,
+            ]);
+
+            $arqueoBloqueado->update([
+                'estado' => 'CERTIFICADO',
+                'certificado_at' => now(),
+            ]);
+
+            return redirect()
+                ->route('jefe.certificaciones.index')
+                ->with(
+                    'success',
+                    'El arqueo fue certificado correctamente por el Jefe de Agentes.'
                 );
-
-                abort_if(
-                    $arqueoBloqueado->estado !== 'PENDIENTE_CERTIFICACION',
-                    422,
-                    'El arqueo ya no se encuentra pendiente de certificación.'
-                );
-
-                $firmaAgente = FirmaArqueo::query()
-                    ->where('arqueo_id', $arqueoBloqueado->id)
-                    ->where('tipo_firma', 'VALIDADOR')
-                    ->where('valida', true)
-                    ->first();
-
-                abort_if(
-                    ! $firmaAgente,
-                    422,
-                    'El Agente todavía no ha validado y firmado este arqueo.'
-                );
-
-                $firmaExistente = FirmaArqueo::query()
-                    ->where('arqueo_id', $arqueoBloqueado->id)
-                    ->where('tipo_firma', 'CERTIFICADOR')
-                    ->where('valida', true)
-                    ->exists();
-
-                abort_if(
-                    $firmaExistente,
-                    422,
-                    'Este arqueo ya posee una certificación válida.'
-                );
-
-                $usuario->loadMissing('datosPersonales');
-
-                $datosPersonales = $usuario->datosPersonales;
-
-                $nombres = trim(
-                    (string) (
-                        $datosPersonales?->nombres
-                        ?? $datosPersonales?->nombre
-                        ?? $usuario->usuario
-                        ?? 'Jefe de Agentes'
-                    )
-                );
-
-                $apellidos = trim(
-                    (string) (
-                        $datosPersonales?->apellidos
-                        ?? $datosPersonales?->apellido
-                        ?? ''
-                    )
-                );
-
-                $contenidoDocumento = json_encode(
-                    [
-                        'arqueo_id' =>
-                            $arqueoBloqueado->id,
-                        'numero_arqueo' =>
-                            $arqueoBloqueado->numero_arqueo,
-                        'agente_id' =>
-                            $arqueoBloqueado->agente_id,
-                        'fecha_arqueo' =>
-                            optional(
-                                $arqueoBloqueado->fecha_arqueo
-                            )->format('Y-m-d'),
-                        'total_arqueado' =>
-                            $arqueoBloqueado->total_arqueado,
-                        'saldo_sistema' =>
-                            $arqueoBloqueado->saldo_sistema,
-                        'diferencia' =>
-                            $arqueoBloqueado->diferencia,
-                        'certificado_por' =>
-                            $usuario->id,
-                        'fecha_firma' =>
-                            now()->toIso8601String(),
-                    ],
-                    JSON_UNESCAPED_UNICODE
-                    | JSON_UNESCAPED_SLASHES
-                );
-
-                $hashDocumento = hash(
-                    'sha256',
-                    (string) $contenidoDocumento
-                );
-
-                $firmaElectronica = hash_hmac(
-                    'sha256',
-                    $hashDocumento,
-                    config('app.key')
-                );
-
-                FirmaArqueo::create([
-                    'arqueo_id' =>
-                        $arqueoBloqueado->id,
-                    'usuario_id' =>
-                        $usuario->id,
-                    'tipo_firma' =>
-                        'CERTIFICADOR',
-                    'rol_firmante' =>
-                        'jefedeAgentes',
-                    'nombres_historicos' =>
-                        $nombres,
-                    'apellidos_historicos' =>
-                        $apellidos,
-                    'hash_documento' =>
-                        $hashDocumento,
-                    'firma_electronica' =>
-                        $firmaElectronica,
-                    'algoritmo' =>
-                        'HMAC-SHA256',
-                    'version_firma' =>
-                        1,
-                    'fecha_firma' =>
-                        now(),
-                    'valida' =>
-                        true,
-                ]);
-
-                $arqueoBloqueado->update([
-                    'estado' =>
-                        'CERTIFICADO',
-                    'certificado_at' =>
-                        now(),
-                ]);
-
-                return redirect()
-                    ->route(
-                        'jefe.certificaciones.index'
-                    )
-                    ->with(
-                        'success',
-                        'El arqueo fue certificado correctamente por el Jefe de Agentes.'
-                    );
-            }
-        );
+        });
     }
 
-    private function validarJefe(
-        Usuario $usuario
-    ): void {
+    private function validarJefe(Usuario $usuario): void
+    {
         $usuario->loadMissing('rol');
 
         abort_if(
-            ! $usuario->rol
-            || $usuario->rol->nombre !== 'jefedeAgentes',
+            ! $usuario->rol || $usuario->rol->nombre !== 'jefedeAgentes',
             403,
             'No tiene autorización para acceder a esta sección.'
         );

@@ -3,192 +3,262 @@
 @section('title', 'Certificar Arqueos')
 @section('module-title', 'Certificar Arqueos')
 
+@push('styles')
+<style>
+    .cert-summary,
+    .cert-filters,
+    .cert-table-card {
+        background: #fff;
+        border: 1px solid #e0e8ee;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .cert-summary {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 16px 18px;
+        margin-bottom: 18px;
+    }
+
+    .cert-summary-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: #edf5fb;
+        color: #164c96;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .cert-summary-icon svg,
+    .icon-button svg {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .cert-summary-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .cert-summary small {
+        display: block;
+        color: #748592;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .cert-summary strong {
+        display: block;
+        margin-top: 3px;
+        color: #0a3158;
+        font-size: 21px;
+    }
+
+    .cert-filters {
+        padding: 18px;
+        margin-bottom: 20px;
+    }
+
+    .cert-filter-row {
+        display: flex;
+        gap: 10px;
+    }
+
+    .cert-control {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 12px;
+        border: 1px solid #ced9e1;
+        border-radius: 10px;
+        outline: none;
+    }
+
+    .cert-filter-btn {
+        min-height: 42px;
+        padding: 0 17px;
+        border: 0;
+        border-radius: 10px;
+        background: #164c96;
+        color: #fff;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .cert-table-wrap {
+        overflow-x: auto;
+    }
+
+    .cert-table {
+        width: 100%;
+        min-width: 1050px;
+        border-collapse: collapse;
+    }
+
+    .cert-table th,
+    .cert-table td {
+        padding: 12px 13px;
+        border-bottom: 1px solid #edf1f4;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    .cert-table th {
+        background: #f7f9fb;
+        color: #687b8b;
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+
+    .cert-table td {
+        font-size: 13px;
+        color: #344e62;
+    }
+
+    .cert-number {
+        font-weight: 800;
+        color: #164c96;
+    }
+
+    .actions-cell {
+        white-space: nowrap;
+    }
+
+    .table-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid #d5dfe5;
+        border-radius: 9px;
+        background: #fff;
+        color: #31536e;
+        text-decoration: none;
+        transition: .2s ease;
+    }
+
+    .icon-button:hover {
+        transform: translateY(-1px);
+        border-color: #9db6c9;
+        background: #f4f8fb;
+        color: #164c96;
+        box-shadow: 0 6px 14px rgba(24, 66, 99, .10);
+    }
+
+    .icon-button svg {
+        width: 17px;
+        height: 17px;
+    }
+
+    .empty-row {
+        text-align: center !important;
+        padding: 35px !important;
+        color: #748592 !important;
+    }
+
+    .cert-pagination {
+        padding: 16px 18px;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="page-header">
     <div class="page-title">
         <h2>Certificar Arqueos</h2>
-        <p>
-            Arqueos realizados por Promotores que ya fueron
-            validados por el Agente y están pendientes
-            de certificación del Jefe de Agentes.
-        </p>
+        <p>Revise los arqueos realizados por Promotores y validados por el Agente antes de realizar la certificación electrónica.</p>
     </div>
 </div>
 
 @if ($errors->any())
-    <div class="alert-message warning">
-        {{ $errors->first() }}
-    </div>
+    <div class="alert-message warning">{{ $errors->first() }}</div>
 @endif
 
-<div style="margin-bottom:20px;">
-    <strong>
-        Pendientes de certificación:
-        {{ $totalPendientes }}
-    </strong>
+<div class="cert-summary">
+    <div class="cert-summary-icon">
+        <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"></path><circle cx="12" cy="12" r="9"></circle></svg>
+    </div>
+    <div>
+        <small>Pendientes de certificación</small>
+        <strong>{{ $totalPendientes }}</strong>
+    </div>
 </div>
 
-<form
-    method="GET"
-    action="{{ route('jefe.certificaciones.index') }}"
-    style="margin-bottom:20px;"
->
-    <input
-        type="text"
-        name="buscar"
-        value="{{ $buscar }}"
-        placeholder="Número, agente, negocio o Promotor"
-        style="
-            width:100%;
-            max-width:520px;
-            min-height:42px;
-            padding:0 12px;
-            border:1px solid #ced9e1;
-            border-radius:10px;
-        "
-    >
-</form>
+<div class="cert-filters">
+    <form method="GET" action="{{ route('jefe.certificaciones.index') }}">
+        <div class="cert-filter-row">
+            <input type="text" name="buscar" value="{{ $buscar }}" class="cert-control"
+                   placeholder="Número, agente, negocio o Promotor">
+            <button type="submit" class="cert-filter-btn">Buscar</button>
+        </div>
+    </form>
+</div>
 
-<div style="overflow-x:auto;background:#fff;border-radius:16px;">
-    <table
-        style="
-            width:100%;
-            min-width:1050px;
-            border-collapse:collapse;
-        "
-    >
-        <thead>
-            <tr style="background:#f7f9fb;">
-                <th style="padding:12px;">Número</th>
-                <th style="padding:12px;">Fecha</th>
-                <th style="padding:12px;">Agente</th>
-                <th style="padding:12px;">Promotor</th>
-                <th style="padding:12px;">Ruta</th>
-                <th style="padding:12px;">Región</th>
-                <th style="padding:12px;">Acción</th>
-            </tr>
-        </thead>
-
-        <tbody>
+<div class="cert-table-card">
+    <div class="cert-table-wrap">
+        <table class="cert-table">
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Fecha</th>
+                    <th>Agente</th>
+                    <th>Promotor</th>
+                    <th>Ruta</th>
+                    <th>Región</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
             @forelse ($arqueos as $arqueo)
                 @php
                     $promotor = trim(
-                        ($arqueo->promotor_nombres ?? '')
-                        . ' '
-                        . ($arqueo->promotor_apellidos ?? '')
+                        ($arqueo->promotor_nombres ?? '') . ' ' .
+                        ($arqueo->promotor_apellidos ?? '')
                     );
                 @endphp
-
-                <tr style="border-top:1px solid #edf1f4;">
-                    <td style="padding:12px;">
-                        {{ $arqueo->numero_arqueo }}
-                    </td>
-
-                    <td style="padding:12px;">
-                        {{ \Carbon\Carbon::parse(
-                            $arqueo->fecha_arqueo
-                        )->format('d/m/Y') }}
-                    </td>
-
-                    <td style="padding:12px;">
-                        {{ $arqueo->codigo_agente }}
-                        — {{ $arqueo->nombre_negocio }}
-                    </td>
-
-                    <td style="padding:12px;">
-                        {{ $promotor !== ''
-                            ? $promotor
-                            : $arqueo->promotor_usuario }}
-                    </td>
-
-                    <td style="padding:12px;">
-                        {{ $arqueo->ruta_nombre ?? '—' }}
-                    </td>
-
-                    <td style="padding:12px;">
-                        {{ $arqueo->region_nombre ?? '—' }}
-                    </td>
-
-                    <td style="padding:12px;">
-                        <form
-                            method="POST"
-                            action="{{ route(
-                                'jefe.certificaciones.certificar',
-                                $arqueo->id
-                            ) }}"
-                            onsubmit="return solicitarPassword(
-                                this,
-                                '{{ $arqueo->numero_arqueo }}'
-                            );"
-                        >
-                            @csrf
-
-                            <input
-                                type="hidden"
-                                name="password"
-                                value=""
-                            >
-
-                            <button
-                                type="submit"
-                                style="
-                                    border:0;
-                                    border-radius:9px;
-                                    padding:9px 12px;
-                                    background:#16834f;
-                                    color:#fff;
-                                    font-weight:800;
-                                    cursor:pointer;
-                                "
-                            >
-                                Certificar
-                            </button>
-                        </form>
+                <tr>
+                    <td class="cert-number">{{ $arqueo->numero_arqueo }}</td>
+                    <td>{{ \Carbon\Carbon::parse($arqueo->fecha_arqueo)->format('d/m/Y') }}</td>
+                    <td><strong>{{ $arqueo->codigo_agente }}</strong> — {{ $arqueo->nombre_negocio }}</td>
+                    <td>{{ $promotor !== '' ? $promotor : ($arqueo->promotor_usuario ?? '—') }}</td>
+                    <td>{{ $arqueo->ruta_nombre ?? '—' }}</td>
+                    <td>{{ $arqueo->region_nombre ?? '—' }}</td>
+                    <td class="actions-cell">
+                        <div class="table-actions">
+                            <a href="{{ route('jefe.certificaciones.show', $arqueo->id) }}"
+                               class="icon-button" title="Visualizar arqueo" aria-label="Visualizar arqueo">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                    <circle cx="12" cy="12" r="2.8"></circle>
+                                </svg>
+                            </a>
+                        </div>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td
-                        colspan="7"
-                        style="padding:35px;text-align:center;"
-                    >
-                        No hay arqueos pendientes de certificación.
-                    </td>
+                    <td colspan="7" class="empty-row">No hay arqueos pendientes de certificación.</td>
                 </tr>
             @endforelse
-        </tbody>
-    </table>
-</div>
-
-@if ($arqueos->hasPages())
-    <div style="margin-top:18px;">
-        {{ $arqueos->links() }}
+            </tbody>
+        </table>
     </div>
-@endif
+
+    @if ($arqueos->hasPages())
+        <div class="cert-pagination">{{ $arqueos->links() }}</div>
+    @endif
+</div>
 @endsection
-
-@push('scripts')
-<script>
-    function solicitarPassword(form, numero) {
-        const password = window.prompt(
-            'Ingrese su contraseña para certificar el arqueo '
-            + numero
-            + ':'
-        );
-
-        if (! password) {
-            return false;
-        }
-
-        form.querySelector(
-            'input[name="password"]'
-        ).value = password;
-
-        return window.confirm(
-            '¿Confirma la certificación electrónica del arqueo '
-            + numero
-            + '?'
-        );
-    }
-</script>
-@endpush

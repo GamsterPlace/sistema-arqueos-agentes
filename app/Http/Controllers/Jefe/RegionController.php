@@ -25,16 +25,14 @@ class RegionController extends Controller
             ->when($buscar !== '', fn ($q) => $q->where('reg.nombre', 'like', '%' . $buscar . '%'))
             ->when($estado === 'ACTIVA', fn ($q) => $q->where('reg.estado', true))
             ->when($estado === 'INACTIVA', fn ($q) => $q->where('reg.estado', false))
-            ->select(['reg.id','reg.nombre','reg.estado'])
+            ->select(['reg.id', 'reg.nombre', 'reg.estado'])
             ->selectSub(
-                DB::table('rutas')
-                    ->selectRaw('COUNT(*)')
+                DB::table('rutas')->selectRaw('COUNT(*)')
                     ->whereColumn('rutas.region_id', 'reg.id'),
                 'total_rutas'
             )
             ->selectSub(
-                DB::table('rutas')
-                    ->selectRaw('COUNT(*)')
+                DB::table('rutas')->selectRaw('COUNT(*)')
                     ->whereColumn('rutas.region_id', 'reg.id')
                     ->where('rutas.estado', true),
                 'rutas_activas'
@@ -66,23 +64,15 @@ class RegionController extends Controller
         $totalRegiones = DB::table('regiones')->count();
         $regionesActivas = DB::table('regiones')->where('estado', true)->count();
         $regionesInactivas = DB::table('regiones')->where('estado', false)->count();
-
         $regionesSinRutas = DB::table('regiones as reg')
             ->whereNotExists(function ($q): void {
-                $q->selectRaw('1')
-                    ->from('rutas as r')
-                    ->whereColumn('r.region_id', 'reg.id');
+                $q->selectRaw('1')->from('rutas as r')->whereColumn('r.region_id', 'reg.id');
             })
             ->count();
 
         return view('jefe.regiones.index', compact(
-            'regiones',
-            'buscar',
-            'estado',
-            'totalRegiones',
-            'regionesActivas',
-            'regionesInactivas',
-            'regionesSinRutas'
+            'regiones', 'buscar', 'estado', 'totalRegiones',
+            'regionesActivas', 'regionesInactivas', 'regionesSinRutas'
         ));
     }
 
@@ -93,12 +83,7 @@ class RegionController extends Controller
         $this->validarJefe($usuario);
 
         $datos = $request->validate([
-            'nombre' => [
-                'required',
-                'string',
-                'max:150',
-                Rule::unique('regiones', 'nombre'),
-            ],
+            'nombre' => ['required', 'string', 'max:150', Rule::unique('regiones', 'nombre')],
         ]);
 
         DB::table('regiones')->insert([
@@ -108,8 +93,7 @@ class RegionController extends Controller
             'updated_at' => now(),
         ]);
 
-        return redirect()
-            ->route('jefe.regiones.index')
+        return redirect()->route('jefe.regiones.index')
             ->with('success', 'La región fue creada correctamente.');
     }
 
@@ -119,31 +103,106 @@ class RegionController extends Controller
         $usuario = $request->user();
         $this->validarJefe($usuario);
 
-        abort_if(
-            ! DB::table('regiones')->where('id', $region)->exists(),
-            404,
-            'La región solicitada no existe.'
-        );
+        abort_if(! DB::table('regiones')->where('id', $region)->exists(), 404, 'La región solicitada no existe.');
 
         $datos = $request->validate([
-            'nombre' => [
-                'required',
-                'string',
-                'max:150',
-                Rule::unique('regiones', 'nombre')->ignore($region),
-            ],
+            'nombre' => ['required', 'string', 'max:150', Rule::unique('regiones', 'nombre')->ignore($region)],
         ]);
 
-        DB::table('regiones')
-            ->where('id', $region)
-            ->update([
-                'nombre' => trim($datos['nombre']),
-                'updated_at' => now(),
-            ]);
+        DB::table('regiones')->where('id', $region)->update([
+            'nombre' => trim($datos['nombre']),
+            'updated_at' => now(),
+        ]);
 
-        return redirect()
-            ->route('jefe.regiones.index')
+        return redirect()->route('jefe.regiones.index')
             ->with('success', 'La región fue actualizada correctamente.');
+    }
+
+    public function rutas(Request $request, int $region): View
+    {
+        /** @var Usuario $usuario */
+        $usuario = $request->user();
+        $this->validarJefe($usuario);
+
+        $regionActual = DB::table('regiones')->where('id', $region)->first();
+        abort_if(! $regionActual, 404, 'La región solicitada no existe.');
+
+        $buscar = trim((string) $request->string('buscar'));
+
+        $rutas = DB::table('rutas as r')
+            ->where('r.region_id', $region)
+            ->when($buscar !== '', function ($q) use ($buscar): void {
+                $q->where(function ($s) use ($buscar): void {
+                    $s->where('r.codigo', 'like', '%' . $buscar . '%')
+                        ->orWhere('r.nombre', 'like', '%' . $buscar . '%');
+                });
+            })
+            ->select(['r.id', 'r.codigo', 'r.nombre', 'r.estado'])
+            ->selectSub(
+                DB::table('agentes')->selectRaw('COUNT(*)')
+                    ->whereColumn('agentes.ruta_id', 'r.id'),
+                'total_agentes'
+            )
+            ->orderBy('r.nombre')
+            ->paginate(20)
+            ->withQueryString();
+
+        $regionesDestino = DB::table('regiones')
+            ->where('estado', true)
+            ->where('id', '!=', $region)
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
+
+        return view('jefe.regiones.rutas', compact(
+            'regionActual', 'rutas', 'regionesDestino', 'buscar'
+        ));
+    }
+
+    public function reasignarRutas(Request $request, int $region): RedirectResponse
+    {
+        /** @var Usuario $usuario */
+        $usuario = $request->user();
+        $this->validarJefe($usuario);
+
+        abort_if(! DB::table('regiones')->where('id', $region)->exists(), 404);
+
+        $datos = $request->validate([
+            'rutas' => ['required', 'array', 'min:1'],
+            'rutas.*' => ['integer', Rule::exists('rutas', 'id')],
+            'region_destino_id' => ['required', 'integer', Rule::exists('regiones', 'id')],
+        ]);
+
+        $destino = DB::table('regiones')
+            ->where('id', $datos['region_destino_id'])
+            ->where('estado', true)
+            ->first();
+
+        if (! $destino || (int) $destino->id === $region) {
+            return back()->with('warning', 'Seleccione una región de destino activa y diferente.');
+        }
+
+        $ids = collect($datos['rutas'])->map(fn ($id) => (int) $id)->unique()->values();
+
+        $validas = DB::table('rutas')
+            ->where('region_id', $region)
+            ->whereIn('id', $ids)
+            ->pluck('id');
+
+        if ($validas->count() !== $ids->count()) {
+            return back()->with('warning', 'Una o más rutas ya no pertenecen a la región seleccionada.');
+        }
+
+        DB::transaction(function () use ($validas, $destino): void {
+            DB::table('rutas')
+                ->whereIn('id', $validas)
+                ->update([
+                    'region_id' => $destino->id,
+                    'updated_at' => now(),
+                ]);
+        });
+
+        return redirect()->route('jefe.regiones.rutas', $region)
+            ->with('success', $validas->count() . ' ruta(s) fueron trasladadas correctamente a ' . $destino->nombre . '.');
     }
 
     public function cambiarEstado(Request $request, int $region): RedirectResponse
@@ -153,42 +212,26 @@ class RegionController extends Controller
         $this->validarJefe($usuario);
 
         $registro = DB::table('regiones')->where('id', $region)->first();
-
         abort_if(! $registro, 404, 'La región solicitada no existe.');
 
         $nuevoEstado = ! (bool) $registro->estado;
 
         if (! $nuevoEstado) {
-            $rutasActivas = DB::table('rutas')
-                ->where('region_id', $region)
-                ->where('estado', true)
-                ->count();
-
-            if ($rutasActivas > 0) {
-                return redirect()
-                    ->route('jefe.regiones.index')
-                    ->with(
-                        'warning',
-                        'No se puede desactivar la región porque tiene rutas activas.'
-                    );
+            if (DB::table('rutas')->where('region_id', $region)->where('estado', true)->exists()) {
+                return redirect()->route('jefe.regiones.index')
+                    ->with('warning', 'No se puede desactivar la región porque tiene rutas activas.');
             }
         }
 
-        DB::table('regiones')
-            ->where('id', $region)
-            ->update([
-                'estado' => $nuevoEstado,
-                'updated_at' => now(),
-            ]);
+        DB::table('regiones')->where('id', $region)->update([
+            'estado' => $nuevoEstado,
+            'updated_at' => now(),
+        ]);
 
-        return redirect()
-            ->route('jefe.regiones.index')
-            ->with(
-                'success',
-                $nuevoEstado
-                    ? 'La región fue activada correctamente.'
-                    : 'La región fue desactivada correctamente.'
-            );
+        return redirect()->route('jefe.regiones.index')->with(
+            'success',
+            $nuevoEstado ? 'La región fue activada correctamente.' : 'La región fue desactivada correctamente.'
+        );
     }
 
     private function validarJefe(Usuario $usuario): void

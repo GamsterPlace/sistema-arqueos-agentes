@@ -109,6 +109,50 @@ class AnulacionController extends Controller
         ]);
     }
 
+    public function show(Request $request, int $arqueo): View
+    {
+        /** @var Usuario $usuario */
+        $usuario = $request->user();
+
+        $this->validarJefe($usuario);
+
+        $registro = DB::table('arqueos as arq')
+            ->where('arq.id', $arqueo)
+            ->whereIn(
+                'arq.estado',
+                [
+                    'PENDIENTE_CERTIFICACION',
+                    'CERTIFICADO',
+                ]
+            )
+            ->first();
+
+        abort_if(
+            ! $registro,
+            404,
+            'El arqueo no existe o ya no está disponible para anulación.'
+        );
+
+        $detalles = DB::table('arqueo_detalles')
+            ->where('arqueo_id', $registro->id)
+            ->orderByDesc('denominacion')
+            ->get();
+
+        $billetes = $detalles
+            ->where('tipo', 'BILLETE')
+            ->values();
+
+        $monedas = $detalles
+            ->where('tipo', 'MONEDA')
+            ->values();
+
+        return view('jefe.anulaciones.show', [
+            'arqueo' => $registro,
+            'billetes' => $billetes,
+            'monedas' => $monedas,
+        ]);
+    }
+
     private function validarJefe(
         Usuario $usuario
     ): void {

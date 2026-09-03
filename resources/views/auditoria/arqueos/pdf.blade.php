@@ -51,6 +51,12 @@
             ->where('valida', 1)
             ->first();
 
+        $firmaValidador = \Illuminate\Support\Facades\DB::table('firmas_arqueos')
+            ->where('arqueo_id', $arqueo->id)
+            ->where('tipo_firma', 'VALIDADOR')
+            ->where('valida', 1)
+            ->first();
+
         $firmaCertificador = \Illuminate\Support\Facades\DB::table('firmas_arqueos')
             ->where('arqueo_id', $arqueo->id)
             ->where('tipo_firma', 'CERTIFICADOR')
@@ -534,7 +540,7 @@
 
         .certification {
             position: absolute;
-            top: 675pt;
+            top: 661pt;
             left: 38pt;
             width: 522pt;
             z-index: 2;
@@ -561,15 +567,15 @@
         }
 
         .signatures {
-            top: 732pt;
+            top: 716pt;
             left: 38pt;
             width: 522pt;
-            height: 48pt;
+            height: 64pt;
         }
 
         .signature {
             position: absolute;
-            width: 220pt;
+            width: 160pt;
             text-align: center;
         }
 
@@ -577,12 +583,16 @@
             left: 0;
         }
 
+        .signature-validador {
+            left: 181pt;
+        }
+
         .signature-certificador {
             right: 0;
         }
 
         .signature-line {
-            width: 220pt;
+            width: 160pt;
             height: 2pt;
             margin: 0 auto;
             border-bottom: .7pt solid #111;
@@ -979,6 +989,47 @@
             </div>
         </div>
 
+        <div class="signature signature-validador">
+            <div class="electronic-signature">
+                @if ($firmaValidador)
+                    <div class="electronic-signature-name">
+                        {{ trim(
+                            $firmaValidador->nombres_historicos
+                            . ' '
+                            . $firmaValidador->apellidos_historicos
+                        ) }}
+                    </div>
+
+                    <div class="electronic-signature-meta">
+                        Firmado electrónicamente el
+                        {{ \Carbon\Carbon::parse(
+                            $firmaValidador->fecha_firma
+                        )->format('d/m/Y H:i') }}
+                    </div>
+
+                    <div class="electronic-signature-code">
+                        Código:
+                        {{ strtoupper(substr(
+                            $firmaValidador->firma_electronica,
+                            0,
+                            20
+                        )) }}
+                    </div>
+                @else
+                    <div class="signature-pending">
+                        Pendiente de validación
+                    </div>
+                @endif
+            </div>
+
+            <div class="signature-line"></div>
+
+            <div class="signature-label">
+                Validado Por:<br>
+                Propietario o Receptor Pagador
+            </div>
+        </div>
+
         <div class="signature signature-certificador">
             <div class="electronic-signature">
                 @if ($firmaCertificador)
@@ -1016,7 +1067,7 @@
 
             <div class="signature-label">
                 Certificado Por:<br>
-                Firma de Certificación
+                Jefe de Agentes MICOOPE
             </div>
         </div>
     </div>

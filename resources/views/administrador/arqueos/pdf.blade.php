@@ -154,6 +154,17 @@
     @endphp
 
     <style>
+        :root {
+            --azul-institucional: #0b315f;
+            --azul-principal: #164c96;
+            --verde-institucional: #4d693f;
+            --amarillo-institucional: #d8b427;
+            --rojo-folio: #a31d17;
+            --texto: #111111;
+            --linea: #344553;
+            --texto-suave: #5d6a74;
+        }
+
         @page {
             size: 612pt 792pt;
             margin: 0;
@@ -172,7 +183,7 @@
         }
 
         body {
-            color: #111;
+            color: var(--texto);
             background: #fff;
             font-family:
                 DejaVu Sans,
@@ -197,7 +208,7 @@
             height: 13pt;
             padding: 0 2pt 1pt;
             overflow: hidden;
-            border-bottom: .65pt solid #111;
+            border-bottom: .65pt solid var(--linea);
             vertical-align: bottom;
             white-space: nowrap;
         }
@@ -236,14 +247,14 @@
             float: left;
             width: 225pt;
             height: 1.5pt;
-            background: #4d693f;
+            background: var(--verde-institucional);
         }
 
         .header-rule .yellow {
             float: left;
             width: 113pt;
             height: 1.5pt;
-            background: #d8b427;
+            background: var(--amarillo-institucional);
         }
 
         .header-number {
@@ -252,7 +263,7 @@
             width: 232pt;
             height: 18pt;
             overflow: hidden;
-            color: #a31d17;
+            color: var(--rojo-folio);
             font-family:
                 DejaVu Serif,
                 serif;
@@ -271,6 +282,7 @@
             font-family:
                 DejaVu Serif,
                 serif;
+            color: var(--azul-institucional);
             font-size: 14pt;
             font-weight: 700;
             text-align: center;
@@ -284,6 +296,7 @@
             font-family:
                 DejaVu Serif,
                 serif;
+            color: var(--azul-institucional);
             font-size: 12pt;
             font-weight: 700;
             text-align: center;
@@ -360,6 +373,7 @@
         }
 
         .section-title {
+            color: var(--azul-institucional);
             font-family:
                 DejaVu Serif,
                 serif;
@@ -427,7 +441,7 @@
             left: 78pt;
             width: 63pt;
             height: 12pt;
-            border-bottom: .65pt solid #111;
+            border-bottom: .65pt solid var(--linea);
             text-align: center;
         }
 
@@ -442,7 +456,7 @@
             width: 93pt;
             height: 12pt;
             padding-right: 2pt;
-            border-bottom: .65pt solid #111;
+            border-bottom: .65pt solid var(--linea);
             text-align: right;
         }
 
@@ -466,7 +480,7 @@
             width: 94pt;
             height: 12pt;
             padding-right: 2pt;
-            border-bottom: .65pt solid #111;
+            border-bottom: .65pt solid var(--linea);
             text-align: right;
         }
 
@@ -511,7 +525,7 @@
             left: 69pt;
             width: 61pt;
             height: 12pt;
-            border-bottom: .65pt solid #111;
+            border-bottom: .65pt solid var(--linea);
             text-align: center;
         }
 
@@ -526,7 +540,7 @@
             width: 92pt;
             height: 12pt;
             padding-right: 2pt;
-            border-bottom: .65pt solid #111;
+            border-bottom: .65pt solid var(--linea);
             text-align: right;
         }
 
@@ -550,7 +564,7 @@
             width: 94pt;
             height: 12pt;
             padding-right: 2pt;
-            border-bottom: .65pt solid #111;
+            border-bottom: .65pt solid var(--linea);
             text-align: right;
         }
 
@@ -569,7 +583,7 @@
             width: 102pt;
             height: 12pt;
             padding-right: 2pt;
-            border-bottom: .7pt solid #111;
+            border-bottom: .7pt solid var(--linea);
             text-align: right;
         }
 
@@ -605,13 +619,15 @@
             width: 51pt;
             height: 13pt;
             padding-right: 2pt;
-            border-bottom: .7pt solid #111;
+            border-bottom: .7pt solid var(--linea);
             text-align: right;
         }
 
         .summary-difference {
             margin-top: 8pt;
+            color: var(--azul-institucional);
             font-size: 9pt;
+            font-weight: 700;
         }
 
         .certification {
@@ -625,6 +641,7 @@
 
         .certification-title {
             margin: 0 0 2pt;
+            color: var(--azul-institucional);
             font-size: 7.2pt;
             font-weight: 700;
             line-height: 9pt;
@@ -635,7 +652,7 @@
             height: 11pt;
             overflow: hidden;
             padding: 0 2pt;
-            border-bottom: .65pt solid #111;
+            border-bottom: .65pt solid var(--linea);
             font-size: 5.7pt;
             line-height: 9.5pt;
             text-align: left;
@@ -667,7 +684,7 @@
             width: 220pt;
             height: 2pt;
             margin: 0 auto;
-            border-bottom: .7pt solid #111;
+            border-bottom: .7pt solid var(--linea);
         }
 
         .signature-label {
@@ -693,7 +710,7 @@
 
         .electronic-signature-meta {
             margin-top: 1pt;
-            color: #333;
+            color: var(--texto-suave);
             font-size: 4.8pt;
             line-height: 6pt;
         }
@@ -708,11 +725,23 @@
 
         .signature-pending {
             padding-top: 4pt;
-            color: #777;
+            color: #7b8790;
             font-size: 5.3pt;
             font-style: italic;
             text-align: center;
         }
+
+        .document-footer {
+            position: absolute;
+            left: 38pt;
+            bottom: 6pt;
+            width: 522pt;
+            color: #8a969f;
+            font-size: 4.6pt;
+            letter-spacing: .15pt;
+            text-align: center;
+        }
+
     </style>
 </head>
 
@@ -1183,6 +1212,11 @@
                 Promotor Agentes MICOOPE
             </div>
         </div>
+    </div>
+
+
+    <div class="document-footer">
+        Sistema de Arqueos para Agentes MICOOPE · Documento generado electrónicamente
     </div>
 
 </div>

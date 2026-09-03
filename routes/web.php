@@ -476,6 +476,11 @@ Route::middleware([
         )->name('agentes.show');
 
         Route::get(
+            '/agentes/{agente}/imprimir',
+            [JefeAgenteController::class, 'imprimirFicha']
+        )->name('agentes.imprimir');
+
+        Route::get(
             '/agentes/{agente}/arqueos/{arqueo}/imprimir',
             [JefeAgenteController::class, 'imprimir']
         )->name('agentes.arqueos.imprimir');
@@ -556,6 +561,16 @@ Route::middleware([
         )->name('rutas.estado');
 
         Route::get(
+            '/rutas/{ruta}/agentes',
+            [JefeRutaController::class, 'agentes']
+        )->name('rutas.agentes');
+
+        Route::patch(
+            '/rutas/{ruta}/agentes/reasignar',
+            [JefeRutaController::class, 'reasignarAgentes']
+        )->name('rutas.agentes.reasignar');
+
+        Route::get(
             '/regiones',
             [JefeRegionController::class, 'index']
         )->name('regiones.index');
@@ -574,6 +589,16 @@ Route::middleware([
             '/regiones/{region}/estado',
             [JefeRegionController::class, 'cambiarEstado']
         )->name('regiones.estado');
+
+        Route::get(
+            '/regiones/{region}/rutas',
+            [JefeRegionController::class, 'rutas']
+        )->name('regiones.rutas');
+
+        Route::patch(
+            '/regiones/{region}/rutas/reasignar',
+            [JefeRegionController::class, 'reasignarRutas']
+        )->name('regiones.rutas.reasignar');
 
         Route::get(
         '/arqueos',
@@ -630,10 +655,15 @@ Route::middleware([
             [JefeReporteController::class, 'imprimir']
         )->name('reportes.imprimir');
 
-         Route::get(
+        Route::get(
             '/certificaciones',
             [CertificacionController::class, 'index']
         )->name('certificaciones.index');
+
+        Route::get(
+            '/certificaciones/{arqueo}',
+            [CertificacionController::class, 'show']
+        )->name('certificaciones.show');
 
         Route::post(
             '/certificaciones/{arqueo}/certificar',
@@ -644,6 +674,11 @@ Route::middleware([
             '/anulaciones',
             [AnulacionController::class, 'index']
         )->name('anulaciones.index');
+
+        Route::get('
+            /anulaciones/{arqueo}',
+            [AnulacionController::class, 'show'])
+        ->name('anulaciones.show');
 
          Route::get(
             '/perfil',
@@ -707,6 +742,10 @@ Route::middleware([
         )->name('perfil.index');
 
 
+        Route::get(
+            '/reportes/imprimir',
+            [ReporteAuditoriaController::class, 'imprimir']
+        )->name('reportes.imprimir');
 
 
 
