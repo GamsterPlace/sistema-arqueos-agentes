@@ -290,6 +290,73 @@
             padding: 16px 20px 20px;
         }
 
+        .confirm-modal-card {
+            max-width: 470px;
+        }
+
+        .confirm-modal-body {
+            padding: 24px 22px;
+            text-align: center;
+        }
+
+        .confirm-icon {
+            display: grid;
+            place-items: center;
+            width: 62px;
+            height: 62px;
+            margin: 0 auto 15px;
+            border-radius: 18px;
+            background: #fff5dc;
+            color: #9c7014;
+        }
+
+        .confirm-icon.success {
+            background: #eaf8ef;
+            color: #1d7b4e;
+        }
+
+        .confirm-icon svg {
+            width: 28px;
+            height: 28px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .confirm-modal-body h4 {
+            margin: 0;
+            color: #0a3158;
+            font-size: 16px;
+        }
+
+        .confirm-modal-body p {
+            margin: 9px auto 0;
+            max-width: 360px;
+            color: #718493;
+            font-size: 10px;
+            line-height: 1.6;
+        }
+
+        .btn-warning-modal {
+            background: #b87917;
+            color: #fff;
+        }
+
+        .btn-warning-modal:hover {
+            background: #9e6712;
+        }
+
+        .btn-success-modal {
+            background: #16834f;
+            color: #fff;
+        }
+
+        .btn-success-modal:hover {
+            background: #116f42;
+        }
+
         .pagination {
             padding: 16px 18px;
         }
@@ -443,14 +510,17 @@
                                 <form
                                     method="POST"
                                     action="{{ route('jefe.rutas.estado', $ruta->id) }}"
-                                    onsubmit="return confirm('{{ $ruta->estado ? '¿Desea desactivar esta ruta?' : '¿Desea activar esta ruta?' }}');"
+                                    class="form-cambiar-estado-ruta"
                                 >
                                     @csrf
                                     @method('PATCH')
 
                                     <button
-                                        type="submit"
+                                        type="button"
                                         class="action-link {{ $ruta->estado ? 'warning' : 'success' }}"
+                                        onclick="abrirModalEstadoRuta(this)"
+                                        data-ruta="{{ $ruta->codigo }} — {{ $ruta->nombre }}"
+                                        data-accion="{{ $ruta->estado ? 'desactivar' : 'activar' }}"
                                     >
                                         {{ $ruta->estado ? 'Desactivar' : 'Activar' }}
                                     </button>
@@ -516,6 +586,67 @@
         </form>
     </div>
 </div>
+
+<div class="modal-backdrop" id="modalEstadoRuta" aria-hidden="true">
+    <div
+        class="modal-card confirm-modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tituloModalEstadoRuta"
+    >
+        <header class="modal-header">
+            <h3 id="tituloModalEstadoRuta">Confirmar cambio de estado</h3>
+
+            <button
+                type="button"
+                class="modal-close"
+                onclick="cerrarModalEstadoRuta()"
+                aria-label="Cerrar"
+            >
+                ×
+            </button>
+        </header>
+
+        <div class="confirm-modal-body">
+            <div class="confirm-icon" id="iconoEstadoRuta">
+                <svg id="iconoDesactivarRuta" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M8 12h8"></path>
+                </svg>
+
+                <svg id="iconoActivarRuta" viewBox="0 0 24 24" style="display:none;">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M8 12h8"></path>
+                    <path d="M12 8v8"></path>
+                </svg>
+            </div>
+
+            <h4 id="preguntaEstadoRuta">¿Cambiar estado de la ruta?</h4>
+
+            <p id="descripcionEstadoRuta">
+                Confirme la operación antes de continuar.
+            </p>
+        </div>
+
+        <footer class="modal-footer">
+            <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="cerrarModalEstadoRuta()"
+            >
+                Volver
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-warning-modal"
+                id="confirmarEstadoRutaBtn"
+            >
+                Confirmar
+            </button>
+        </footer>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -529,6 +660,16 @@
     const rutaRegion = document.getElementById('rutaRegion');
     const storeUrl = @json(route('jefe.rutas.store'));
     const updateBaseUrl = @json(url('/jefe-agentes/rutas'));
+
+    const modalEstadoRuta = document.getElementById('modalEstadoRuta');
+    const confirmarEstadoRutaBtn = document.getElementById('confirmarEstadoRutaBtn');
+    const preguntaEstadoRuta = document.getElementById('preguntaEstadoRuta');
+    const descripcionEstadoRuta = document.getElementById('descripcionEstadoRuta');
+    const iconoEstadoRuta = document.getElementById('iconoEstadoRuta');
+    const iconoDesactivarRuta = document.getElementById('iconoDesactivarRuta');
+    const iconoActivarRuta = document.getElementById('iconoActivarRuta');
+
+    let formularioEstadoRutaActual = null;
 
     function abrirCrearRuta() {
         formRuta.reset();
@@ -552,14 +693,88 @@
         modalRuta.classList.remove('open');
     }
 
+    function abrirModalEstadoRuta(button) {
+        formularioEstadoRutaActual =
+            button.closest('.form-cambiar-estado-ruta');
+
+        const ruta = button.dataset.ruta || 'esta ruta';
+        const accion = button.dataset.accion || 'cambiar';
+        const activar = accion === 'activar';
+
+        preguntaEstadoRuta.textContent =
+            activar
+                ? '¿Activar esta ruta?'
+                : '¿Desactivar esta ruta?';
+
+        descripcionEstadoRuta.textContent =
+            activar
+                ? 'La ruta "' + ruta + '" volverá a quedar disponible para la operación del sistema.'
+                : 'La ruta "' + ruta + '" quedará inactiva. La operación puede ser bloqueada si existen agentes activos o un Promotor asignado.';
+
+        iconoEstadoRuta.classList.toggle('success', activar);
+
+        iconoActivarRuta.style.display =
+            activar ? 'block' : 'none';
+
+        iconoDesactivarRuta.style.display =
+            activar ? 'none' : 'block';
+
+        confirmarEstadoRutaBtn.className =
+            'btn ' + (
+                activar
+                    ? 'btn-success-modal'
+                    : 'btn-warning-modal'
+            );
+
+        confirmarEstadoRutaBtn.textContent =
+            activar
+                ? 'Sí, Activar Ruta'
+                : 'Sí, Desactivar Ruta';
+
+        modalEstadoRuta.classList.add('open');
+        modalEstadoRuta.setAttribute('aria-hidden', 'false');
+    }
+
+    function cerrarModalEstadoRuta() {
+        modalEstadoRuta.classList.remove('open');
+        modalEstadoRuta.setAttribute('aria-hidden', 'true');
+        formularioEstadoRutaActual = null;
+    }
+
+    confirmarEstadoRutaBtn.addEventListener('click', function () {
+        if (! formularioEstadoRutaActual) {
+            return;
+        }
+
+        this.disabled = true;
+        this.textContent = 'Procesando...';
+
+        formularioEstadoRutaActual.submit();
+    });
+
     modalRuta.addEventListener('click', function(event) {
         if (event.target === modalRuta) {
             cerrarModalRuta();
         }
     });
 
+    modalEstadoRuta.addEventListener('click', function(event) {
+        if (event.target === modalEstadoRuta) {
+            cerrarModalEstadoRuta();
+        }
+    });
+
     document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
+        if (event.key !== 'Escape') {
+            return;
+        }
+
+        if (modalEstadoRuta.classList.contains('open')) {
+            cerrarModalEstadoRuta();
+            return;
+        }
+
+        if (modalRuta.classList.contains('open')) {
             cerrarModalRuta();
         }
     });

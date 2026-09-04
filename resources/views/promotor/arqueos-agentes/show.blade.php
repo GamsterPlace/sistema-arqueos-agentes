@@ -479,6 +479,78 @@
         background: #fbfcfd;
     }
 
+    .certify-modal-dialog {
+        width: min(500px, 100%);
+    }
+
+    .certify-modal-header h3 {
+        color: #1f7a4d;
+    }
+
+    .certify-modal-body {
+        padding: 24px 22px;
+        text-align: center;
+    }
+
+    .certify-icon {
+        display: grid;
+        place-items: center;
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 16px;
+        border-radius: 18px;
+        background: #e8f7ee;
+        color: #1f7a4d;
+    }
+
+    .certify-icon svg {
+        width: 30px;
+        height: 30px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .certify-modal-body h4 {
+        margin: 0;
+        color: #173f66;
+        font-size: 17px;
+        font-weight: 800;
+    }
+
+    .certify-modal-body p {
+        max-width: 390px;
+        margin: 9px auto 0;
+        color: #6c7f90;
+        font-size: 11px;
+        line-height: 1.6;
+    }
+
+    .certify-summary {
+        margin-top: 17px;
+        padding: 13px 14px;
+        border: 1px solid #d8e7df;
+        border-radius: 11px;
+        background: #f6fbf8;
+        text-align: left;
+    }
+
+    .certify-summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 6px 0;
+        color: #536b5f;
+        font-size: 10px;
+    }
+
+    .certify-summary-row strong {
+        color: #194d34;
+        text-align: right;
+    }
+
     body.modal-open {
         overflow: hidden;
     }
@@ -990,16 +1062,14 @@
                                 'promotor.arqueos-agentes.certificar',
                                 $arqueo
                             ) }}"
-                            onsubmit="return confirm(
-                                '¿Está seguro de certificar este arqueo? '
-                                + 'Esta acción registrará su firma electrónica.'
-                            );"
+                            id="form-certificar-arqueo"
                         >
                             @csrf
 
                             <button
-                                type="submit"
+                                type="button"
                                 class="btn btn-certify"
+                                id="open-certify-modal"
                                 style="width: 100%;"
                             >
                                 Certificar y firmar arqueo
@@ -1024,6 +1094,166 @@
         </div>
     </div>
 </div>
+@if ($puedeCertificar)
+    <div
+        class="modal-backdrop"
+        id="certify-modal"
+        aria-hidden="true"
+    >
+        <div
+            class="modal-dialog certify-modal-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="certify-modal-title"
+        >
+            <div class="modal-header certify-modal-header">
+                <div>
+                    <h3 id="certify-modal-title">
+                        Certificar Arqueo
+                    </h3>
+
+                    <p>
+                        Confirme la certificación electrónica antes de continuar.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    id="close-certify-modal"
+                    aria-label="Cerrar"
+                >
+                    ×
+                </button>
+            </div>
+
+            <div class="certify-modal-body">
+                <div class="certify-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 3 4.5 6v5.5c0 4.8 3.2 8 7.5 9.5 4.3-1.5 7.5-4.7 7.5-9.5V6L12 3Z"></path>
+                        <path d="m8.5 12 2.2 2.2 4.8-5"></path>
+                    </svg>
+                </div>
+
+                <h4>¿Certificar este arqueo?</h4>
+
+                <p>
+                    Al continuar, el sistema registrará su firma electrónica
+                    como Promotor y el arqueo quedará certificado.
+                </p>
+
+                <div class="certify-summary">
+                    <div class="certify-summary-row">
+                        <span>Número de arqueo</span>
+                        <strong>{{ $arqueo->numero_arqueo }}</strong>
+                    </div>
+
+                    <div class="certify-summary-row">
+                        <span>Agente</span>
+                        <strong>
+                            {{ $arqueo->codigo_agente_historico }}
+                            — {{ $arqueo->nombre_negocio_historico }}
+                        </strong>
+                    </div>
+
+                    <div class="certify-summary-row">
+                        <span>Total arqueado</span>
+                        <strong>
+                            Q {{ number_format(
+                                (float) $arqueo->total_arqueado,
+                                2
+                            ) }}
+                        </strong>
+                    </div>
+
+                    <div class="certify-summary-row">
+                        <span>Diferencia</span>
+                        <strong>
+                            Q {{ number_format(
+                                (float) $arqueo->diferencia,
+                                2
+                            ) }}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    id="cancel-certify-modal"
+                >
+                    Volver
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-certify"
+                    id="confirm-certify-button"
+                >
+                    Sí, Certificar y Firmar
+                </button>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if ($puedeCertificar)
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('certify-modal');
+            const openButton = document.getElementById('open-certify-modal');
+            const closeButton = document.getElementById('close-certify-modal');
+            const cancelButton = document.getElementById('cancel-certify-modal');
+            const confirmButton = document.getElementById('confirm-certify-button');
+            const form = document.getElementById('form-certificar-arqueo');
+
+            if (!modal || !openButton || !form) {
+                return;
+            }
+
+            const openModal = function () {
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('modal-open');
+            };
+
+            const closeModal = function () {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('modal-open');
+                openButton.focus();
+            };
+
+            openButton.addEventListener('click', openModal);
+            closeButton?.addEventListener('click', closeModal);
+            cancelButton?.addEventListener('click', closeModal);
+
+            confirmButton?.addEventListener('click', function () {
+                this.disabled = true;
+                this.textContent = 'Certificando...';
+                form.submit();
+            });
+
+            modal.addEventListener('click', function (event) {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (
+                    event.key === 'Escape'
+                    && modal.classList.contains('is-open')
+                ) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
+@endif
+
 @if ($puedeAnular)
     <div
         class="modal-backdrop"

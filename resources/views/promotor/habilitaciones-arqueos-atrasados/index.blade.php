@@ -210,6 +210,150 @@
         padding: 16px;
     }
 
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(10, 24, 37, .65);
+        backdrop-filter: blur(3px);
+    }
+
+    .modal-backdrop.is-open {
+        display: flex;
+    }
+
+    .modal-dialog {
+        width: min(500px, 100%);
+        overflow: hidden;
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px 22px 16px;
+        border-bottom: 1px solid #e7edf1;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        color: #8f2f2a;
+        font-size: 19px;
+        font-weight: 800;
+    }
+
+    .modal-header p {
+        margin: 6px 0 0;
+        color: #6c7f90;
+        font-size: 11px;
+        line-height: 1.45;
+    }
+
+    .modal-close {
+        width: 36px;
+        height: 36px;
+        border: 0;
+        border-radius: 10px;
+        background: #eef3f7;
+        color: #415d72;
+        font-size: 22px;
+        cursor: pointer;
+    }
+
+    .modal-body {
+        padding: 24px 22px;
+        text-align: center;
+    }
+
+    .modal-icon {
+        display: grid;
+        place-items: center;
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 16px;
+        border-radius: 18px;
+        background: #fff0ef;
+        color: #9a302a;
+    }
+
+    .modal-icon svg {
+        width: 30px;
+        height: 30px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .modal-body h4 {
+        margin: 0;
+        color: #173f66;
+        font-size: 17px;
+        font-weight: 800;
+    }
+
+    .modal-body p {
+        max-width: 390px;
+        margin: 9px auto 0;
+        color: #6c7f90;
+        font-size: 11px;
+        line-height: 1.6;
+    }
+
+    .modal-summary {
+        margin-top: 17px;
+        padding: 13px 14px;
+        border: 1px solid #ead7d4;
+        border-radius: 11px;
+        background: #fff8f7;
+        text-align: left;
+    }
+
+    .modal-summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 6px 0;
+        color: #765a57;
+        font-size: 10px;
+    }
+
+    .modal-summary-row strong {
+        color: #7f302b;
+        text-align: right;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 16px 22px 20px;
+        border-top: 1px solid #e7edf1;
+        background: #fbfcfd;
+    }
+
+    .btn-danger-solid {
+        background: #b33a34;
+        color: #ffffff;
+    }
+
+    .btn-danger-solid:hover {
+        background: #982f2a;
+    }
+
+    body.modal-open {
+        overflow: hidden;
+    }
+
     @media (max-width: 1050px) {
         .content-grid {
             grid-template-columns: 1fr;
@@ -470,15 +614,16 @@
                                             'promotor.habilitaciones-atrasadas.cancelar',
                                             $habilitacion->id
                                         ) }}"
-                                        onsubmit="return confirm(
-                                            '¿Desea cancelar esta habilitación?'
-                                        );"
+                                        class="form-cancelar-habilitacion"
                                     >
                                         @csrf
 
                                         <button
-                                            type="submit"
+                                            type="button"
                                             class="btn btn-danger"
+                                            onclick="abrirModalCancelacion(this)"
+                                            data-agente="{{ $habilitacion->codigo_agente }} — {{ $habilitacion->nombre_negocio }}"
+                                            data-fecha="{{ \Carbon\Carbon::parse($habilitacion->fecha_autorizada)->format('d/m/Y') }}"
                                         >
                                             Cancelar
                                         </button>
@@ -508,4 +653,183 @@
         @endif
     </section>
 </div>
+
+<div
+    class="modal-backdrop"
+    id="cancelar-habilitacion-modal"
+    aria-hidden="true"
+>
+    <div
+        class="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cancelar-habilitacion-title"
+    >
+        <div class="modal-header">
+            <div>
+                <h3 id="cancelar-habilitacion-title">
+                    Cancelar Habilitación
+                </h3>
+
+                <p>
+                    Confirme la cancelación antes de continuar.
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="cerrar-cancelacion-modal"
+                aria-label="Cerrar"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="modal-body">
+            <div class="modal-icon">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M8 8l8 8"></path>
+                    <path d="M16 8l-8 8"></path>
+                </svg>
+            </div>
+
+            <h4>¿Cancelar esta habilitación?</h4>
+
+            <p>
+                El Agente dejará de tener autorización para realizar
+                el arqueo correspondiente a la fecha habilitada.
+            </p>
+
+            <div class="modal-summary">
+                <div class="modal-summary-row">
+                    <span>Agente</span>
+                    <strong id="cancelacion-agente">—</strong>
+                </div>
+
+                <div class="modal-summary-row">
+                    <span>Fecha habilitada</span>
+                    <strong id="cancelacion-fecha">—</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button
+                type="button"
+                class="btn btn-secondary"
+                id="volver-cancelacion-modal"
+            >
+                Volver
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-danger-solid"
+                id="confirmar-cancelacion"
+            >
+                Sí, Cancelar Habilitación
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById(
+            'cancelar-habilitacion-modal'
+        );
+
+        const closeButton = document.getElementById(
+            'cerrar-cancelacion-modal'
+        );
+
+        const backButton = document.getElementById(
+            'volver-cancelacion-modal'
+        );
+
+        const confirmButton = document.getElementById(
+            'confirmar-cancelacion'
+        );
+
+        const agentText = document.getElementById(
+            'cancelacion-agente'
+        );
+
+        const dateText = document.getElementById(
+            'cancelacion-fecha'
+        );
+
+        let currentForm = null;
+
+        window.abrirModalCancelacion = function (button) {
+            currentForm = button.closest(
+                '.form-cancelar-habilitacion'
+            );
+
+            agentText.textContent =
+                button.dataset.agente || '—';
+
+            dateText.textContent =
+                button.dataset.fecha || '—';
+
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('modal-open');
+        };
+
+        const closeModal = function () {
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open');
+            currentForm = null;
+        };
+
+        closeButton?.addEventListener(
+            'click',
+            closeModal
+        );
+
+        backButton?.addEventListener(
+            'click',
+            closeModal
+        );
+
+        confirmButton?.addEventListener(
+            'click',
+            function () {
+                if (! currentForm) {
+                    return;
+                }
+
+                this.disabled = true;
+                this.textContent = 'Cancelando...';
+
+                currentForm.submit();
+            }
+        );
+
+        modal?.addEventListener(
+            'click',
+            function (event) {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            }
+        );
+
+        document.addEventListener(
+            'keydown',
+            function (event) {
+                if (
+                    event.key === 'Escape'
+                    && modal.classList.contains('is-open')
+                ) {
+                    closeModal();
+                }
+            }
+        );
+    });
+</script>
 @endsection

@@ -332,6 +332,59 @@
         background: #fbfcfd;
     }
 
+    .confirm-modal-card {
+        width: min(470px, 100%);
+    }
+
+    .confirm-modal-body {
+        padding: 24px 22px;
+        text-align: center;
+    }
+
+    .confirm-icon {
+        display: grid;
+        place-items: center;
+        width: 62px;
+        height: 62px;
+        margin: 0 auto 15px;
+        border-radius: 18px;
+        background: #fff5dc;
+        color: #9c7014;
+    }
+
+    .confirm-icon svg {
+        width: 28px;
+        height: 28px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .confirm-modal-body h4 {
+        margin: 0;
+        color: #0a3158;
+        font-size: 16px;
+    }
+
+    .confirm-modal-body p {
+        margin: 9px auto 0;
+        max-width: 360px;
+        color: #718493;
+        font-size: 10px;
+        line-height: 1.6;
+    }
+
+    .btn-warning-modal {
+        background: #b87917;
+        color: #ffffff;
+    }
+
+    .btn-warning-modal:hover {
+        background: #9e6712;
+    }
+
     @media (max-width: 1100px) {
         .summary-grid {
             grid-template-columns: repeat(2, 1fr);
@@ -639,15 +692,16 @@
                                         'jefe.habilitaciones-atrasadas.cancelar',
                                         $habilitacion->id
                                     ) }}"
-                                    onsubmit="return confirm(
-                                        '¿Desea cancelar esta habilitación?'
-                                    );"
+                                    class="form-cancelar-habilitacion"
                                 >
                                     @csrf
 
                                     <button
-                                        type="submit"
+                                        type="button"
                                         class="action-link warning"
+                                        onclick="abrirModalCancelacion(this)"
+                                        data-agente="{{ $habilitacion->codigo_agente }} — {{ $habilitacion->nombre_negocio }}"
+                                        data-fecha="{{ \Carbon\Carbon::parse($habilitacion->fecha_autorizada)->format('d/m/Y') }}"
                                     >
                                         Cancelar
                                     </button>
@@ -796,47 +850,123 @@
         </form>
     </div>
 </div>
+
+<div class="modal-backdrop" id="modalCancelacion" aria-hidden="true">
+    <div class="modal-card confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="tituloModalCancelacion">
+        <header class="modal-header">
+            <div>
+                <h3 id="tituloModalCancelacion">Cancelar Habilitación</h3>
+                <p>Confirme la cancelación de esta autorización.</p>
+            </div>
+
+            <button type="button" class="modal-close" onclick="cerrarModalCancelacion()" aria-label="Cerrar">×</button>
+        </header>
+
+        <div class="confirm-modal-body">
+            <div class="confirm-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 3 2.8 19h18.4L12 3Z"></path>
+                    <path d="M12 9v4"></path>
+                    <path d="M12 17h.01"></path>
+                </svg>
+            </div>
+
+            <h4>¿Cancelar esta habilitación?</h4>
+
+            <p>
+                Se cancelará la autorización para que
+                <strong id="cancelacionAgente">este Agente</strong>
+                realice el arqueo correspondiente al
+                <strong id="cancelacionFecha">día autorizado</strong>.
+                Esta acción dejará la habilitación en estado CANCELADA.
+            </p>
+        </div>
+
+        <footer class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="cerrarModalCancelacion()">Volver</button>
+
+            <button type="button" class="btn btn-warning-modal" id="confirmarCancelacionBtn">
+                Sí, Cancelar Habilitación
+            </button>
+        </footer>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 <script>
-    const modalHabilitacion =
-        document.getElementById(
-            'modalHabilitacion'
-        );
+    const modalHabilitacion = document.getElementById('modalHabilitacion');
+    const modalCancelacion = document.getElementById('modalCancelacion');
+    const confirmarCancelacionBtn = document.getElementById('confirmarCancelacionBtn');
+
+    let formularioCancelacionActual = null;
 
     function abrirModalHabilitacion() {
-        modalHabilitacion.classList.add(
-            'open'
-        );
+        modalHabilitacion.classList.add('open');
+        modalHabilitacion.setAttribute('aria-hidden', 'false');
     }
 
     function cerrarModalHabilitacion() {
-        modalHabilitacion.classList.remove(
-            'open'
-        );
+        modalHabilitacion.classList.remove('open');
+        modalHabilitacion.setAttribute('aria-hidden', 'true');
     }
 
-    modalHabilitacion.addEventListener(
-        'click',
-        function (event) {
-            if (
-                event.target
-                === modalHabilitacion
-            ) {
-                cerrarModalHabilitacion();
-            }
-        }
-    );
+    function abrirModalCancelacion(button) {
+        formularioCancelacionActual = button.closest('.form-cancelar-habilitacion');
 
-    document.addEventListener(
-        'keydown',
-        function (event) {
-            if (event.key === 'Escape') {
-                cerrarModalHabilitacion();
-            }
+        document.getElementById('cancelacionAgente').textContent =
+            button.dataset.agente || 'este Agente';
+
+        document.getElementById('cancelacionFecha').textContent =
+            button.dataset.fecha || 'la fecha autorizada';
+
+        modalCancelacion.classList.add('open');
+        modalCancelacion.setAttribute('aria-hidden', 'false');
+    }
+
+    function cerrarModalCancelacion() {
+        modalCancelacion.classList.remove('open');
+        modalCancelacion.setAttribute('aria-hidden', 'true');
+        formularioCancelacionActual = null;
+    }
+
+    confirmarCancelacionBtn.addEventListener('click', function () {
+        if (! formularioCancelacionActual) {
+            return;
         }
-    );
+
+        this.disabled = true;
+        this.textContent = 'Cancelando...';
+
+        formularioCancelacionActual.submit();
+    });
+
+    modalHabilitacion.addEventListener('click', function (event) {
+        if (event.target === modalHabilitacion) {
+            cerrarModalHabilitacion();
+        }
+    });
+
+    modalCancelacion.addEventListener('click', function (event) {
+        if (event.target === modalCancelacion) {
+            cerrarModalCancelacion();
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key !== 'Escape') {
+            return;
+        }
+
+        if (modalCancelacion.classList.contains('open')) {
+            cerrarModalCancelacion();
+            return;
+        }
+
+        if (modalHabilitacion.classList.contains('open')) {
+            cerrarModalHabilitacion();
+        }
+    });
 
     @if ($errors->any())
         abrirModalHabilitacion();

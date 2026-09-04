@@ -310,6 +310,73 @@
         padding: 16px 20px 20px;
     }
 
+    .confirm-modal-card {
+        max-width: 470px;
+    }
+
+    .confirm-modal-body {
+        padding: 24px 22px;
+        text-align: center;
+    }
+
+    .confirm-icon {
+        display: grid;
+        place-items: center;
+        width: 62px;
+        height: 62px;
+        margin: 0 auto 15px;
+        border-radius: 18px;
+        background: #fff5dc;
+        color: #9c7014;
+    }
+
+    .confirm-icon.success {
+        background: #eaf8ef;
+        color: #1d7b4e;
+    }
+
+    .confirm-icon svg {
+        width: 28px;
+        height: 28px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .confirm-modal-body h4 {
+        margin: 0;
+        color: #0a3158;
+        font-size: 16px;
+    }
+
+    .confirm-modal-body p {
+        margin: 9px auto 0;
+        max-width: 360px;
+        color: #718493;
+        font-size: 10px;
+        line-height: 1.6;
+    }
+
+    .btn-warning-modal {
+        background: #b87917;
+        color: #ffffff;
+    }
+
+    .btn-warning-modal:hover {
+        background: #9e6712;
+    }
+
+    .btn-success-modal {
+        background: #16834f;
+        color: #ffffff;
+    }
+
+    .btn-success-modal:hover {
+        background: #116f42;
+    }
+
     @media (max-width: 1100px) {
         .summary-grid,
         .regions-grid {
@@ -448,14 +515,17 @@
                         <form
                             method="POST"
                             action="{{ route('jefe.regiones.estado', $region->id) }}"
-                            onsubmit="return confirm('{{ $region->estado ? '¿Desea desactivar esta región?' : '¿Desea activar esta región?' }}');"
+                            class="form-cambiar-estado-region"
                         >
                             @csrf
                             @method('PATCH')
 
                             <button
-                                type="submit"
+                                type="button"
                                 class="action-link {{ $region->estado ? 'warning' : 'success' }}"
+                                onclick="abrirModalEstadoRegion(this)"
+                                data-region="{{ $region->nombre }}"
+                                data-accion="{{ $region->estado ? 'desactivar' : 'activar' }}"
                             >
                                 {{ $region->estado ? 'Desactivar' : 'Activar' }}
                             </button>
@@ -498,6 +568,67 @@
         </form>
     </div>
 </div>
+
+<div class="modal-backdrop" id="modalEstadoRegion" aria-hidden="true">
+    <div
+        class="modal-card confirm-modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tituloModalEstadoRegion"
+    >
+        <header class="modal-header">
+            <h3 id="tituloModalEstadoRegion">Confirmar cambio de estado</h3>
+
+            <button
+                type="button"
+                class="modal-close"
+                onclick="cerrarModalEstadoRegion()"
+                aria-label="Cerrar"
+            >
+                ×
+            </button>
+        </header>
+
+        <div class="confirm-modal-body">
+            <div class="confirm-icon" id="iconoEstadoRegion">
+                <svg id="iconoDesactivarRegion" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M8 12h8"></path>
+                </svg>
+
+                <svg id="iconoActivarRegion" viewBox="0 0 24 24" style="display:none;">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M8 12h8"></path>
+                    <path d="M12 8v8"></path>
+                </svg>
+            </div>
+
+            <h4 id="preguntaEstadoRegion">¿Cambiar estado de la región?</h4>
+
+            <p id="descripcionEstadoRegion">
+                Confirme la operación antes de continuar.
+            </p>
+        </div>
+
+        <footer class="modal-footer">
+            <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="cerrarModalEstadoRegion()"
+            >
+                Volver
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-warning-modal"
+                id="confirmarEstadoRegionBtn"
+            >
+                Confirmar
+            </button>
+        </footer>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -509,6 +640,16 @@
     const regionNombre = document.getElementById('regionNombre');
     const storeRegionUrl = @json(route('jefe.regiones.store'));
     const updateRegionBaseUrl = @json(url('/jefe-agentes/regiones'));
+
+    const modalEstadoRegion = document.getElementById('modalEstadoRegion');
+    const confirmarEstadoRegionBtn = document.getElementById('confirmarEstadoRegionBtn');
+    const preguntaEstadoRegion = document.getElementById('preguntaEstadoRegion');
+    const descripcionEstadoRegion = document.getElementById('descripcionEstadoRegion');
+    const iconoEstadoRegion = document.getElementById('iconoEstadoRegion');
+    const iconoDesactivarRegion = document.getElementById('iconoDesactivarRegion');
+    const iconoActivarRegion = document.getElementById('iconoActivarRegion');
+
+    let formularioEstadoRegionActual = null;
 
     function abrirCrearRegion() {
         formRegion.reset();
@@ -530,14 +671,89 @@
         modalRegion.classList.remove('open');
     }
 
+    function abrirModalEstadoRegion(button) {
+        formularioEstadoRegionActual =
+            button.closest('.form-cambiar-estado-region');
+
+        const region = button.dataset.region || 'esta región';
+        const accion = button.dataset.accion || 'cambiar';
+
+        const activar = accion === 'activar';
+
+        preguntaEstadoRegion.textContent =
+            activar
+                ? '¿Activar esta región?'
+                : '¿Desactivar esta región?';
+
+        descripcionEstadoRegion.textContent =
+            activar
+                ? 'La región "' + region + '" volverá a quedar disponible para la operación del sistema.'
+                : 'La región "' + region + '" quedará inactiva. Confirme la operación antes de continuar.';
+
+        iconoEstadoRegion.classList.toggle('success', activar);
+
+        iconoActivarRegion.style.display =
+            activar ? 'block' : 'none';
+
+        iconoDesactivarRegion.style.display =
+            activar ? 'none' : 'block';
+
+        confirmarEstadoRegionBtn.className =
+            'btn ' + (
+                activar
+                    ? 'btn-success-modal'
+                    : 'btn-warning-modal'
+            );
+
+        confirmarEstadoRegionBtn.textContent =
+            activar
+                ? 'Sí, Activar Región'
+                : 'Sí, Desactivar Región';
+
+        modalEstadoRegion.classList.add('open');
+        modalEstadoRegion.setAttribute('aria-hidden', 'false');
+    }
+
+    function cerrarModalEstadoRegion() {
+        modalEstadoRegion.classList.remove('open');
+        modalEstadoRegion.setAttribute('aria-hidden', 'true');
+        formularioEstadoRegionActual = null;
+    }
+
+    confirmarEstadoRegionBtn.addEventListener('click', function () {
+        if (! formularioEstadoRegionActual) {
+            return;
+        }
+
+        this.disabled = true;
+        this.textContent = 'Procesando...';
+
+        formularioEstadoRegionActual.submit();
+    });
+
     modalRegion.addEventListener('click', function(event) {
         if (event.target === modalRegion) {
             cerrarModalRegion();
         }
     });
 
+    modalEstadoRegion.addEventListener('click', function(event) {
+        if (event.target === modalEstadoRegion) {
+            cerrarModalEstadoRegion();
+        }
+    });
+
     document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
+        if (event.key !== 'Escape') {
+            return;
+        }
+
+        if (modalEstadoRegion.classList.contains('open')) {
+            cerrarModalEstadoRegion();
+            return;
+        }
+
+        if (modalRegion.classList.contains('open')) {
             cerrarModalRegion();
         }
     });
