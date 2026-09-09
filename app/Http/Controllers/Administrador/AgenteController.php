@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Administrador;
 
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -231,7 +232,11 @@ class AgenteController extends Controller
         );
 
         $agenteId = DB::transaction(
-            function () use ($validated, $rolAgente): int {
+            function () use (
+                $validated,
+                $rolAgente,
+                $usuario
+            ): int {
                 $usuarioId = DB::table('usuarios')
                     ->insertGetId([
                         'usuario' => $validated['usuario'],
@@ -251,7 +256,7 @@ class AgenteController extends Controller
                         'updated_at' => now(),
                     ]);
 
-                return DB::table('agentes')
+                $agenteId = DB::table('agentes')
                     ->insertGetId([
                         'usuario_id' => $usuarioId,
                         'ruta_id' => $validated['ruta_id'],
@@ -263,6 +268,28 @@ class AgenteController extends Controller
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
+
+                $nuevos = $this->obtenerValoresAuditoriaAgente(
+                    $agenteId
+                );
+
+                app(AuditoriaService::class)->registrar(
+                    usuario: $usuario,
+                    modulo: 'Agentes',
+                    accion: 'CREAR_AGENTE',
+                    tablaAfectada: 'agentes',
+                    registroId: $agenteId,
+                    descripcion:
+                        'Se creó el Agente '
+                        . $validated['codigo_agente']
+                        . ' — '
+                        . $validated['nombre_negocio']
+                        . ' y su cuenta de acceso.',
+                    valoresAnteriores: null,
+                    valoresNuevos: $nuevos
+                );
+
+                return $agenteId;
             }
         );
 
@@ -433,7 +460,16 @@ class AgenteController extends Controller
         ]);
 
         DB::transaction(
-            function () use ($registro, $agente, $validated): void {
+            function () use (
+                $registro,
+                $agente,
+                $validated,
+                $usuario
+            ): void {
+                $anteriores = $this->obtenerValoresAuditoriaAgente(
+                    $agente
+                );
+
                 DB::table('usuarios')
                     ->where('id', $registro->usuario_id)
                     ->update([
@@ -464,6 +500,65 @@ class AgenteController extends Controller
                         'direccion' => $validated['direccion'],
                         'updated_at' => now(),
                     ]);
+
+                $nuevos = $this->obtenerValoresAuditoriaAgente(
+                    $agente
+                );
+
+                app(AuditoriaService::class)->registrar(
+                    usuario: $usuario,
+                    modulo: 'Agentes',
+                    accion: 'EDITAR_AGENTE',
+                    tablaAfectada: 'agentes',
+                    registroId: $agente,
+                    descripcion:
+                        'Se actualizaron los datos del Agente '
+                        . ($nuevos['codigo_agente'] ?? ('#' . $agente))
+                        . ' — '
+                        . ($nuevos['nombre_negocio'] ?? 'Sin nombre')
+                        . '.',
+                    valoresAnteriores: $anteriores,
+                    valoresNuevos: $nuevos
+                );
+
+                if (
+                    (int) ($anteriores['ruta_id'] ?? 0)
+                    !== (int) ($nuevos['ruta_id'] ?? 0)
+                ) {
+                    app(AuditoriaService::class)->registrar(
+                        usuario: $usuario,
+                        modulo: 'Agentes',
+                        accion: 'CAMBIAR_RUTA_AGENTE',
+                        tablaAfectada: 'agentes',
+                        registroId: $agente,
+                        descripcion:
+                            'Se cambió la ruta asignada al Agente '
+                            . ($nuevos['codigo_agente'] ?? ('#' . $agente))
+                            . ' de '
+                            . ($anteriores['ruta_codigo'] ?? 'Sin ruta')
+                            . ' — '
+                            . ($anteriores['ruta_nombre'] ?? 'Sin nombre')
+                            . ' a '
+                            . ($nuevos['ruta_codigo'] ?? 'Sin ruta')
+                            . ' — '
+                            . ($nuevos['ruta_nombre'] ?? 'Sin nombre')
+                            . '.',
+                        valoresAnteriores: [
+                            'ruta_id' => $anteriores['ruta_id'] ?? null,
+                            'ruta_codigo' => $anteriores['ruta_codigo'] ?? null,
+                            'ruta_nombre' => $anteriores['ruta_nombre'] ?? null,
+                            'region_id' => $anteriores['region_id'] ?? null,
+                            'region_nombre' => $anteriores['region_nombre'] ?? null,
+                        ],
+                        valoresNuevos: [
+                            'ruta_id' => $nuevos['ruta_id'] ?? null,
+                            'ruta_codigo' => $nuevos['ruta_codigo'] ?? null,
+                            'ruta_nombre' => $nuevos['ruta_nombre'] ?? null,
+                            'region_id' => $nuevos['region_id'] ?? null,
+                            'region_nombre' => $nuevos['region_nombre'] ?? null,
+                        ]
+                    );
+                }
             }
         );
 
@@ -507,7 +602,16 @@ class AgenteController extends Controller
                 : 'ACTIVO';
 
         DB::transaction(
-            function () use ($registro, $agente, $nuevoEstado): void {
+            function () use (
+                $registro,
+                $agente,
+                $nuevoEstado,
+                $usuario
+            ): void {
+                $anteriores = $this->obtenerValoresAuditoriaAgente(
+                    $agente
+                );
+
                 DB::table('agentes')
                     ->where('id', $agente)
                     ->update([
@@ -521,6 +625,42 @@ class AgenteController extends Controller
                         'estado' => $nuevoEstado,
                         'updated_at' => now(),
                     ]);
+
+                $nuevos = $this->obtenerValoresAuditoriaAgente(
+                    $agente
+                );
+
+                $accion = $nuevoEstado === 'ACTIVO'
+                    ? 'ACTIVAR_AGENTE'
+                    : 'DESACTIVAR_AGENTE';
+
+                app(AuditoriaService::class)->registrar(
+                    usuario: $usuario,
+                    modulo: 'Agentes',
+                    accion: $accion,
+                    tablaAfectada: 'agentes',
+                    registroId: $agente,
+                    descripcion:
+                        'Se '
+                        . ($nuevoEstado === 'ACTIVO'
+                            ? 'activó'
+                            : 'desactivó')
+                        . ' el Agente '
+                        . ($nuevos['codigo_agente'] ?? ('#' . $agente))
+                        . ' y su cuenta de acceso.',
+                    valoresAnteriores: [
+                        'estado_agente' =>
+                            $anteriores['estado_agente'] ?? null,
+                        'estado_usuario' =>
+                            $anteriores['estado_usuario'] ?? null,
+                    ],
+                    valoresNuevos: [
+                        'estado_agente' =>
+                            $nuevos['estado_agente'] ?? null,
+                        'estado_usuario' =>
+                            $nuevos['estado_usuario'] ?? null,
+                    ]
+                );
             }
         );
 
@@ -528,6 +668,79 @@ class AgenteController extends Controller
             'success',
             'Estado del agente y su cuenta actualizado correctamente.'
         );
+    }
+
+    private function obtenerValoresAuditoriaAgente(
+        int $agenteId
+    ): array {
+        $registro = DB::table('agentes as a')
+            ->join(
+                'usuarios as u',
+                'u.id',
+                '=',
+                'a.usuario_id'
+            )
+            ->leftJoin(
+                'datos_personales as dp',
+                'dp.usuario_id',
+                '=',
+                'u.id'
+            )
+            ->join(
+                'rutas as r',
+                'r.id',
+                '=',
+                'a.ruta_id'
+            )
+            ->join(
+                'regiones as reg',
+                'reg.id',
+                '=',
+                'r.region_id'
+            )
+            ->where('a.id', $agenteId)
+            ->select([
+                'a.id',
+                'a.usuario_id',
+                'a.ruta_id',
+                'a.codigo_agente',
+                'a.nombre_negocio',
+                'a.nombre_propietario',
+                'a.direccion',
+                'a.estado as estado_agente',
+                'u.usuario',
+                'u.estado as estado_usuario',
+                'dp.nombres',
+                'dp.apellidos',
+                'r.codigo as ruta_codigo',
+                'r.nombre as ruta_nombre',
+                'reg.id as region_id',
+                'reg.nombre as region_nombre',
+            ])
+            ->first();
+
+        if (! $registro) {
+            return [];
+        }
+
+        return [
+            'id' => (int) $registro->id,
+            'usuario_id' => (int) $registro->usuario_id,
+            'usuario' => $registro->usuario,
+            'nombres' => $registro->nombres,
+            'apellidos' => $registro->apellidos,
+            'codigo_agente' => $registro->codigo_agente,
+            'nombre_negocio' => $registro->nombre_negocio,
+            'nombre_propietario' => $registro->nombre_propietario,
+            'direccion' => $registro->direccion,
+            'estado_agente' => $registro->estado_agente,
+            'estado_usuario' => $registro->estado_usuario,
+            'ruta_id' => (int) $registro->ruta_id,
+            'ruta_codigo' => $registro->ruta_codigo,
+            'ruta_nombre' => $registro->ruta_nombre,
+            'region_id' => (int) $registro->region_id,
+            'region_nombre' => $registro->region_nombre,
+        ];
     }
 
     private function buscarAgente(int $agente): ?object

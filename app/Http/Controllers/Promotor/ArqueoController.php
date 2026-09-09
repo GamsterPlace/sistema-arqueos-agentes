@@ -8,6 +8,7 @@ use App\Models\Arqueo;
 use App\Models\ArqueoDetalle;
 use App\Models\FirmaArqueo;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -337,10 +338,126 @@ class ArqueoController extends Controller
                     ]);
                 }
 
-                $this->crearFirmaRealizador(
+                $firmaRealizador = $this->crearFirmaRealizador(
                     $arqueo,
                     $usuario,
                     $detalleValidado
+                );
+
+                app(AuditoriaService::class)->registrar(
+                    usuario: $usuario,
+                    modulo: 'Arqueos de Promotor',
+                    accion: 'CREAR_ARQUEO',
+                    tablaAfectada: 'arqueos',
+                    registroId: $arqueo->id,
+                    descripcion:
+                        'El Promotor creó el arqueo '
+                        . $arqueo->numero_arqueo
+                        . ' para el Agente '
+                        . $agente->codigo_agente
+                        . ' — '
+                        . $agente->nombre_negocio
+                        . '.',
+                    valoresAnteriores: null,
+                    valoresNuevos: [
+                        'id' => (int) $arqueo->id,
+                        'numero_arqueo' => $arqueo->numero_arqueo,
+                        'agente_id' => (int) $arqueo->agente_id,
+                        'creado_por' => (int) $arqueo->creado_por,
+                        'tipo' => $arqueo->tipo,
+                        'estado' => $arqueo->estado,
+                        'fecha_arqueo' => $arqueo->fecha_arqueo,
+                        'hora_inicio' => $arqueo->hora_inicio,
+                        'hora_fin' => $arqueo->hora_fin,
+                        'fuera_fecha_ordinaria' =>
+                            (bool) $arqueo->fuera_fecha_ordinaria,
+                        'codigo_agente_historico' =>
+                            $arqueo->codigo_agente_historico,
+                        'nombre_negocio_historico' =>
+                            $arqueo->nombre_negocio_historico,
+                        'nombre_propietario_historico' =>
+                            $arqueo->nombre_propietario_historico,
+                        'direccion_historica' =>
+                            $arqueo->direccion_historica,
+                        'ruta_historica' =>
+                            $arqueo->ruta_historica,
+                        'region_historica' =>
+                            $arqueo->region_historica,
+                        'total_billetes' =>
+                            (float) $arqueo->total_billetes,
+                        'total_monedas' =>
+                            (float) $arqueo->total_monedas,
+                        'total_arqueado' =>
+                            (float) $arqueo->total_arqueado,
+                        'saldo_sistema' =>
+                            (float) $arqueo->saldo_sistema,
+                        'diferencia' =>
+                            (float) $arqueo->diferencia,
+                        'certificacion' =>
+                            $arqueo->certificacion,
+                        'observaciones' =>
+                            $arqueo->observaciones,
+                        'pendiente_certificacion_at' =>
+                            $arqueo->pendiente_certificacion_at,
+                        'detalle' => collect($detalleValidado)
+                            ->filter(
+                                fn (array $item): bool =>
+                                    $item['cantidad'] > 0
+                            )
+                            ->map(
+                                fn (array $item): array => [
+                                    'tipo' => $item['tipo'],
+                                    'denominacion' =>
+                                        (float) $item['denominacion'],
+                                    'cantidad' =>
+                                        (int) $item['cantidad'],
+                                    'subtotal' => round(
+                                        $item['cantidad']
+                                        * $item['denominacion'],
+                                        2
+                                    ),
+                                ]
+                            )
+                            ->values()
+                            ->all(),
+                    ]
+                );
+
+                app(AuditoriaService::class)->registrar(
+                    usuario: $usuario,
+                    modulo: 'Firmas de Arqueos',
+                    accion: 'FIRMAR_ARQUEO',
+                    tablaAfectada: 'firmas_arqueos',
+                    registroId: $firmaRealizador->id,
+                    descripcion:
+                        'El Promotor registró su firma electrónica como REALIZADOR '
+                        . 'del arqueo '
+                        . $arqueo->numero_arqueo
+                        . '.',
+                    valoresAnteriores: null,
+                    valoresNuevos: [
+                        'id' => (int) $firmaRealizador->id,
+                        'arqueo_id' =>
+                            (int) $firmaRealizador->arqueo_id,
+                        'usuario_id' =>
+                            (int) $firmaRealizador->usuario_id,
+                        'tipo_firma' =>
+                            $firmaRealizador->tipo_firma,
+                        'rol_firmante' =>
+                            $firmaRealizador->rol_firmante,
+                        'nombres_historicos' =>
+                            $firmaRealizador->nombres_historicos,
+                        'apellidos_historicos' =>
+                            $firmaRealizador->apellidos_historicos,
+                        'algoritmo' =>
+                            $firmaRealizador->algoritmo,
+                        'version_firma' =>
+                            (int) $firmaRealizador->version_firma,
+                        'fecha_firma' =>
+                            $firmaRealizador->fecha_firma,
+                        'valida' =>
+                            (bool) $firmaRealizador->valida,
+                    ]
                 );
             });
         } catch (ValidationException $exception) {
@@ -734,7 +851,7 @@ class ArqueoController extends Controller
         Arqueo $arqueo,
         Usuario $usuario,
         array $detalle
-    ): void {
+    ): FirmaArqueo {
         $detalleHash = collect($detalle)
             ->map(function (array $item): array {
                 return [
@@ -831,7 +948,7 @@ class ArqueoController extends Controller
             }
         }
 
-        FirmaArqueo::create([
+        return FirmaArqueo::create([
             'arqueo_id' => $arqueo->id,
             'usuario_id' => $usuario->id,
             'tipo_firma' => 'REALIZADOR',

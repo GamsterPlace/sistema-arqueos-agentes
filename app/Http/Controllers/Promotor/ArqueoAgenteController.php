@@ -8,6 +8,7 @@ use App\Models\Arqueo;
 use App\Models\ArqueoDetalle;
 use App\Models\FirmaArqueo;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -416,7 +417,9 @@ class ArqueoAgenteController extends Controller
                 config('app.key')
             );
 
-            FirmaArqueo::create([
+            $fechaFirma = now();
+
+            $firma = FirmaArqueo::create([
                 'arqueo_id' => $arqueo->id,
                 'usuario_id' => $usuario->id,
                 'tipo_firma' => 'CERTIFICADOR',
@@ -427,14 +430,66 @@ class ArqueoAgenteController extends Controller
                 'firma_electronica' => $firmaElectronica,
                 'algoritmo' => 'HMAC-SHA256',
                 'version_firma' => 1,
-                'fecha_firma' => now(),
+                'fecha_firma' => $fechaFirma,
                 'valida' => true,
             ]);
 
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Firmas de Arqueos',
+                accion: 'FIRMAR_ARQUEO',
+                tablaAfectada: 'firmas_arqueos',
+                registroId: $firma->id,
+                descripcion:
+                    'El Promotor registró su firma electrónica como CERTIFICADOR '
+                    . 'del arqueo '
+                    . $arqueo->numero_arqueo
+                    . '.',
+                valoresAnteriores: null,
+                valoresNuevos: [
+                    'id' => (int) $firma->id,
+                    'arqueo_id' => (int) $firma->arqueo_id,
+                    'usuario_id' => (int) $firma->usuario_id,
+                    'tipo_firma' => $firma->tipo_firma,
+                    'rol_firmante' => $firma->rol_firmante,
+                    'nombres_historicos' => $firma->nombres_historicos,
+                    'apellidos_historicos' => $firma->apellidos_historicos,
+                    'algoritmo' => $firma->algoritmo,
+                    'version_firma' => (int) $firma->version_firma,
+                    'fecha_firma' => $fechaFirma,
+                    'valida' => (bool) $firma->valida,
+                ]
+            );
+
+            $valoresAnterioresArqueo = [
+                'estado' => $arqueo->estado,
+                'certificado_at' => $arqueo->certificado_at,
+            ];
+
+            $fechaCertificacion = now();
+
             $arqueo->update([
                 'estado' => 'CERTIFICADO',
-                'certificado_at' => now(),
+                'certificado_at' => $fechaCertificacion,
             ]);
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Arqueos de Agentes',
+                accion: 'CERTIFICAR_ARQUEO',
+                tablaAfectada: 'arqueos',
+                registroId: $arqueo->id,
+                descripcion:
+                    'El Promotor certificó el arqueo '
+                    . $arqueo->numero_arqueo
+                    . '.',
+                valoresAnteriores: $valoresAnterioresArqueo,
+                valoresNuevos: [
+                    'estado' => $arqueo->estado,
+                    'certificado_at' => $fechaCertificacion,
+                    'firma_certificador_id' => (int) $firma->id,
+                ]
+            );
 
             return redirect()
                 ->route(
@@ -555,13 +610,43 @@ class ArqueoAgenteController extends Controller
                 $motivo
             );
 
+            $valoresAnterioresArqueo = [
+                'estado' => $arqueoBloqueado->estado,
+                'anulado_at' => $arqueoBloqueado->anulado_at,
+                'observaciones' => $arqueoBloqueado->observaciones,
+            ];
+
+            $fechaAnulacion = now();
+
+            $nuevasObservaciones = $observacionAnterior !== ''
+                ? $observacionAnterior . PHP_EOL . PHP_EOL . $registroAnulacion
+                : $registroAnulacion;
+
             $arqueoBloqueado->update([
                 'estado' => 'ANULADO',
-                'anulado_at' => now(),
-                'observaciones' => $observacionAnterior !== ''
-                    ? $observacionAnterior . PHP_EOL . PHP_EOL . $registroAnulacion
-                    : $registroAnulacion,
+                'anulado_at' => $fechaAnulacion,
+                'observaciones' => $nuevasObservaciones,
             ]);
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Arqueos de Agentes',
+                accion: 'ANULAR_ARQUEO',
+                tablaAfectada: 'arqueos',
+                registroId: $arqueoBloqueado->id,
+                descripcion:
+                    'El Promotor anuló el arqueo '
+                    . $arqueoBloqueado->numero_arqueo
+                    . '. Motivo: '
+                    . $motivo,
+                valoresAnteriores: $valoresAnterioresArqueo,
+                valoresNuevos: [
+                    'estado' => $arqueoBloqueado->estado,
+                    'anulado_at' => $fechaAnulacion,
+                    'motivo_anulacion' => $motivo,
+                    'observaciones' => $nuevasObservaciones,
+                ]
+            );
 
             return redirect()
                 ->route(

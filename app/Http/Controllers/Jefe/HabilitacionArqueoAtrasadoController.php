@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Jefe;
 
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -250,8 +251,15 @@ class HabilitacionArqueoAtrasadoController extends Controller
                 );
         }
 
-        DB::table('habilitaciones_arqueos_atrasados')
-            ->insert([
+        DB::transaction(function () use (
+            $agenteId,
+            $fechaAutorizada,
+            $datos,
+            $usuario
+        ): void {
+            $habilitacionId = DB::table(
+                'habilitaciones_arqueos_atrasados'
+            )->insertGetId([
                 'agente_id' => $agenteId,
                 'fecha_autorizada' => $fechaAutorizada,
                 'motivo' => trim($datos['motivo']),
@@ -262,6 +270,31 @@ class HabilitacionArqueoAtrasadoController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            $nuevos =
+                $this->obtenerValoresAuditoriaHabilitacion(
+                    $habilitacionId
+                );
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Arqueos Fuera de Tiempo',
+                accion: 'HABILITAR_ARQUEO_ATRASADO',
+                tablaAfectada:
+                    'habilitaciones_arqueos_atrasados',
+                registroId: $habilitacionId,
+                descripcion:
+                    'Se habilitó un arqueo fuera de tiempo para el Agente '
+                    . ($nuevos['codigo_agente'] ?? ('#' . $agenteId))
+                    . ' — '
+                    . ($nuevos['nombre_negocio'] ?? 'Sin nombre')
+                    . ' correspondiente a la fecha '
+                    . ($nuevos['fecha_autorizada'] ?? $fechaAutorizada)
+                    . '.',
+                valoresAnteriores: null,
+                valoresNuevos: $nuevos
+            );
+        });
 
         return redirect()
             ->route('jefe.habilitaciones-atrasadas.index')
@@ -305,13 +338,47 @@ class HabilitacionArqueoAtrasadoController extends Controller
             ->exists();
 
         if ($arqueoGenerado) {
-            DB::table('habilitaciones_arqueos_atrasados')
-                ->where('id', $habilitacion)
-                ->update([
-                    'estado' => 'UTILIZADA',
-                    'utilizado_at' => $registro->utilizado_at ?: now(),
-                    'updated_at' => now(),
-                ]);
+            DB::transaction(function () use (
+                $habilitacion,
+                $registro,
+                $usuario
+            ): void {
+                $anteriores =
+                    $this->obtenerValoresAuditoriaHabilitacion(
+                        $habilitacion
+                    );
+
+                DB::table('habilitaciones_arqueos_atrasados')
+                    ->where('id', $habilitacion)
+                    ->update([
+                        'estado' => 'UTILIZADA',
+                        'utilizado_at' =>
+                            $registro->utilizado_at ?: now(),
+                        'updated_at' => now(),
+                    ]);
+
+                $nuevos =
+                    $this->obtenerValoresAuditoriaHabilitacion(
+                        $habilitacion
+                    );
+
+                app(AuditoriaService::class)->registrar(
+                    usuario: $usuario,
+                    modulo: 'Arqueos Fuera de Tiempo',
+                    accion:
+                        'MARCAR_HABILITACION_UTILIZADA',
+                    tablaAfectada:
+                        'habilitaciones_arqueos_atrasados',
+                    registroId: $habilitacion,
+                    descripcion:
+                        'La habilitación del Agente '
+                        . ($nuevos['codigo_agente']
+                            ?? ('#' . ($registro->agente_id ?? '')))
+                        . ' fue marcada como UTILIZADA porque ya existe un arqueo generado con esta autorización.',
+                    valoresAnteriores: $anteriores,
+                    valoresNuevos: $nuevos
+                );
+            });
 
             return redirect()
                 ->route('jefe.habilitaciones-atrasadas.index')
@@ -321,12 +388,46 @@ class HabilitacionArqueoAtrasadoController extends Controller
                 );
         }
 
-        DB::table('habilitaciones_arqueos_atrasados')
-            ->where('id', $habilitacion)
-            ->update([
-                'estado' => 'CANCELADA',
-                'updated_at' => now(),
-            ]);
+        DB::transaction(function () use (
+            $habilitacion,
+            $usuario
+        ): void {
+            $anteriores =
+                $this->obtenerValoresAuditoriaHabilitacion(
+                    $habilitacion
+                );
+
+            DB::table('habilitaciones_arqueos_atrasados')
+                ->where('id', $habilitacion)
+                ->update([
+                    'estado' => 'CANCELADA',
+                    'updated_at' => now(),
+                ]);
+
+            $nuevos =
+                $this->obtenerValoresAuditoriaHabilitacion(
+                    $habilitacion
+                );
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Arqueos Fuera de Tiempo',
+                accion: 'CANCELAR_HABILITACION_ATRASADA',
+                tablaAfectada:
+                    'habilitaciones_arqueos_atrasados',
+                registroId: $habilitacion,
+                descripcion:
+                    'Se canceló la habilitación de arqueo fuera de tiempo del Agente '
+                    . ($nuevos['codigo_agente'] ?? ('#' . $habilitacion))
+                    . ' — '
+                    . ($nuevos['nombre_negocio'] ?? 'Sin nombre')
+                    . ' correspondiente a la fecha '
+                    . ($nuevos['fecha_autorizada'] ?? 'sin fecha')
+                    . '.',
+                valoresAnteriores: $anteriores,
+                valoresNuevos: $nuevos
+            );
+        });
 
         return redirect()
             ->route('jefe.habilitaciones-atrasadas.index')
@@ -334,6 +435,108 @@ class HabilitacionArqueoAtrasadoController extends Controller
                 'success',
                 'La habilitación fue cancelada correctamente.'
             );
+    }
+
+    private function obtenerValoresAuditoriaHabilitacion(
+        int $habilitacionId
+    ): array {
+        $registro = DB::table(
+            'habilitaciones_arqueos_atrasados as h'
+        )
+            ->join(
+                'agentes as a',
+                'a.id',
+                '=',
+                'h.agente_id'
+            )
+            ->join(
+                'rutas as r',
+                'r.id',
+                '=',
+                'a.ruta_id'
+            )
+            ->join(
+                'regiones as reg',
+                'reg.id',
+                '=',
+                'r.region_id'
+            )
+            ->leftJoin(
+                'usuarios as u',
+                'u.id',
+                '=',
+                'h.autorizado_por'
+            )
+            ->leftJoin(
+                'datos_personales as dp',
+                'dp.usuario_id',
+                '=',
+                'u.id'
+            )
+            ->where('h.id', $habilitacionId)
+            ->select([
+                'h.id',
+                'h.agente_id',
+                'h.fecha_autorizada',
+                'h.motivo',
+                'h.autorizado_por',
+                'h.autorizado_at',
+                'h.estado',
+                'h.utilizado_at',
+                'a.codigo_agente',
+                'a.nombre_negocio',
+                'a.nombre_propietario',
+                'r.id as ruta_id',
+                'r.codigo as ruta_codigo',
+                'r.nombre as ruta_nombre',
+                'reg.id as region_id',
+                'reg.nombre as region_nombre',
+                'u.usuario as autorizador_usuario',
+                'dp.nombres as autorizador_nombres',
+                'dp.apellidos as autorizador_apellidos',
+            ])
+            ->first();
+
+        if (! $registro) {
+            return [];
+        }
+
+        $autorizador = trim(
+            ($registro->autorizador_nombres ?? '')
+            . ' '
+            . ($registro->autorizador_apellidos ?? '')
+        );
+
+        return [
+            'id' => (int) $registro->id,
+            'agente_id' => (int) $registro->agente_id,
+            'codigo_agente' => $registro->codigo_agente,
+            'nombre_negocio' => $registro->nombre_negocio,
+            'nombre_propietario' =>
+                $registro->nombre_propietario,
+            'ruta_id' => (int) $registro->ruta_id,
+            'ruta_codigo' => $registro->ruta_codigo,
+            'ruta_nombre' => $registro->ruta_nombre,
+            'region_id' => (int) $registro->region_id,
+            'region_nombre' => $registro->region_nombre,
+            'fecha_autorizada' =>
+                (string) $registro->fecha_autorizada,
+            'motivo' => $registro->motivo,
+            'autorizado_por' =>
+                (int) $registro->autorizado_por,
+            'autorizador' => $autorizador !== ''
+                ? $autorizador
+                : ($registro->autorizador_usuario ?? null),
+            'autorizado_at' =>
+                $registro->autorizado_at !== null
+                    ? (string) $registro->autorizado_at
+                    : null,
+            'estado' => $registro->estado,
+            'utilizado_at' =>
+                $registro->utilizado_at !== null
+                    ? (string) $registro->utilizado_at
+                    : null,
+        ];
     }
 
     private function validarJefe(Usuario $usuario): void

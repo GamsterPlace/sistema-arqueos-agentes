@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Arqueo;
 use App\Models\FirmaArqueo;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -421,7 +422,7 @@ class ArqueoPromotorController extends Controller
                     $claveFirma
                 );
 
-                FirmaArqueo::create([
+                $firmaArqueo = FirmaArqueo::create([
                     'arqueo_id' => $arqueoBloqueado->id,
                     'usuario_id' => $usuario->id,
                     'tipo_firma' => 'VALIDADOR',
@@ -443,6 +444,35 @@ class ArqueoPromotorController extends Controller
                     'fecha_firma' => $fechaFirma,
                     'valida' => true,
                 ]);
+
+                app(AuditoriaService::class)->registrar(
+                    usuario: $usuario,
+                    modulo: 'Firmas Arqueos',
+                    accion: 'FIRMAR_ARQUEO',
+                    tablaAfectada: 'firmas_arqueos',
+                    registroId: $firmaArqueo->id,
+                    descripcion:
+                        'El Agente registró su firma electrónica como VALIDADOR '
+                        . 'del arqueo '
+                        . $arqueoBloqueado->numero_arqueo
+                        . '.',
+                    valoresAnteriores: null,
+                    valoresNuevos: [
+                        'id' => (int) $firmaArqueo->id,
+                        'arqueo_id' => (int) $firmaArqueo->arqueo_id,
+                        'usuario_id' => (int) $firmaArqueo->usuario_id,
+                        'tipo_firma' => $firmaArqueo->tipo_firma,
+                        'rol_firmante' => $firmaArqueo->rol_firmante,
+                        'nombres_historicos' => $firmaArqueo->nombres_historicos,
+                        'apellidos_historicos' => $firmaArqueo->apellidos_historicos,
+                        'hash_documento' => $firmaArqueo->hash_documento,
+                        'firma_electronica' => $firmaArqueo->firma_electronica,
+                        'algoritmo' => $firmaArqueo->algoritmo,
+                        'version_firma' => (int) $firmaArqueo->version_firma,
+                        'fecha_firma' => $fechaFirma->format('Y-m-d H:i:s.u'),
+                        'valida' => (bool) $firmaArqueo->valida,
+                    ]
+                );
             });
         } catch (ValidationException $exception) {
             throw $exception;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auditoria;
 use App\Http\Controllers\Controller;
 use App\Models\Arqueo;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -428,6 +429,71 @@ class ArqueoController extends Controller
                             'updated_at' => now(),
                         ]);
                 }
+
+                $arqueoCreado = DB::table('arqueos')
+                    ->where('id', $arqueoId)
+                    ->first();
+
+                app(AuditoriaService::class)->registrar(
+                    usuario: $usuario,
+                    modulo: 'Auditoría de Agentes',
+                    accion: 'CREAR_ARQUEO_AUDITORIA',
+                    tablaAfectada: 'arqueos',
+                    registroId: $arqueoId,
+                    descripcion:
+                        'El usuario de Auditoría registró el arqueo '
+                        . ($arqueoCreado->numero_arqueo ?? ('#' . $arqueoId))
+                        . ' para el Agente '
+                        . $agente->codigo_agente
+                        . ' — '
+                        . $agente->nombre_negocio
+                        . '.',
+                    valoresAnteriores: null,
+                    valoresNuevos: [
+                        'id' => (int) $arqueoId,
+                        'numero_arqueo' =>
+                            $arqueoCreado->numero_arqueo ?? null,
+                        'agente_id' => (int) $agente->id,
+                        'creado_por' => (int) $usuario->id,
+                        'tipo' => 'VISITA_AUDITORIA',
+                        'estado' => 'PENDIENTE_CERTIFICACION',
+                        'fecha_arqueo' =>
+                            $arqueoCreado->fecha_arqueo ?? today()->format('Y-m-d'),
+                        'fuera_fecha_ordinaria' => false,
+                        'codigo_agente_historico' =>
+                            $agente->codigo_agente,
+                        'nombre_negocio_historico' =>
+                            $agente->nombre_negocio,
+                        'nombre_propietario_historico' =>
+                            $agente->nombre_propietario,
+                        'direccion_historica' =>
+                            $agente->direccion,
+                        'ruta_historica' =>
+                            trim(
+                                $agente->ruta_codigo
+                                . ' - '
+                                . $agente->ruta_nombre
+                            ),
+                        'region_historica' =>
+                            $agente->region_nombre,
+                        'total_billetes' =>
+                            (float) $totalBilletes,
+                        'total_monedas' =>
+                            (float) $totalMonedas,
+                        'total_arqueado' =>
+                            (float) $totalArqueado,
+                        'saldo_sistema' =>
+                            (float) $saldoSistema,
+                        'diferencia' =>
+                            (float) $diferencia,
+                        'observaciones' =>
+                            $validated['observaciones'] ?? null,
+                        'detalle' => array_merge(
+                            $detalleBilletes,
+                            $detalleMonedas
+                        ),
+                    ]
+                );
 
                 return $arqueoId;
             }

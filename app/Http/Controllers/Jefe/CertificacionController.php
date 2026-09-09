@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Arqueo;
 use App\Models\FirmaArqueo;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -250,7 +251,12 @@ class CertificacionController extends Controller
                 config('app.key')
             );
 
-            FirmaArqueo::create([
+            $valoresAnterioresArqueo =
+                $this->obtenerValoresAuditoriaArqueo(
+                    $arqueoBloqueado->id
+                );
+
+            $firmaJefe = FirmaArqueo::create([
                 'arqueo_id' => $arqueoBloqueado->id,
                 'usuario_id' => $usuario->id,
                 'tipo_firma' => 'CERTIFICADOR',
@@ -270,6 +276,62 @@ class CertificacionController extends Controller
                 'certificado_at' => now(),
             ]);
 
+            $valoresNuevosArqueo =
+                $this->obtenerValoresAuditoriaArqueo(
+                    $arqueoBloqueado->id
+                );
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Certificaciones',
+                accion: 'FIRMAR_ARQUEO_CERTIFICADOR',
+                tablaAfectada: 'firmas_arqueos',
+                registroId: (int) $firmaJefe->id,
+                descripcion:
+                    'El Jefe de Agentes registró su firma electrónica '
+                    . 'como CERTIFICADOR en el arqueo '
+                    . $arqueoBloqueado->numero_arqueo
+                    . '.',
+                valoresAnteriores: null,
+                valoresNuevos: [
+                    'id' => (int) $firmaJefe->id,
+                    'arqueo_id' => (int) $firmaJefe->arqueo_id,
+                    'numero_arqueo' =>
+                        $arqueoBloqueado->numero_arqueo,
+                    'usuario_id' => (int) $firmaJefe->usuario_id,
+                    'tipo_firma' => $firmaJefe->tipo_firma,
+                    'rol_firmante' => $firmaJefe->rol_firmante,
+                    'nombres_historicos' =>
+                        $firmaJefe->nombres_historicos,
+                    'apellidos_historicos' =>
+                        $firmaJefe->apellidos_historicos,
+                    'algoritmo' => $firmaJefe->algoritmo,
+                    'version_firma' =>
+                        (int) $firmaJefe->version_firma,
+                    'fecha_firma' =>
+                        optional($firmaJefe->fecha_firma)
+                            ->format('Y-m-d H:i:s'),
+                    'valida' => (bool) $firmaJefe->valida,
+                ]
+            );
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Certificaciones',
+                accion: 'CERTIFICAR_ARQUEO',
+                tablaAfectada: 'arqueos',
+                registroId: $arqueoBloqueado->id,
+                descripcion:
+                    'El Jefe de Agentes certificó el arqueo '
+                    . $arqueoBloqueado->numero_arqueo
+                    . ' correspondiente al Agente '
+                    . ($valoresNuevosArqueo['codigo_agente_historico']
+                        ?? ('#' . $arqueoBloqueado->agente_id))
+                    . '.',
+                valoresAnteriores: $valoresAnterioresArqueo,
+                valoresNuevos: $valoresNuevosArqueo
+            );
+
             return redirect()
                 ->route('jefe.certificaciones.index')
                 ->with(
@@ -277,6 +339,89 @@ class CertificacionController extends Controller
                     'El arqueo fue certificado correctamente por el Jefe de Agentes.'
                 );
         });
+    }
+
+    private function obtenerValoresAuditoriaArqueo(
+        int $arqueoId
+    ): array {
+        $registro = DB::table('arqueos as arq')
+            ->leftJoin(
+                'agentes as a',
+                'a.id',
+                '=',
+                'arq.agente_id'
+            )
+            ->where('arq.id', $arqueoId)
+            ->select([
+                'arq.id',
+                'arq.numero_arqueo',
+                'arq.agente_id',
+                'arq.creado_por',
+                'arq.tipo',
+                'arq.estado',
+                'arq.fecha_arqueo',
+                'arq.total_billetes',
+                'arq.total_monedas',
+                'arq.total_arqueado',
+                'arq.saldo_sistema',
+                'arq.diferencia',
+                'arq.pendiente_certificacion_at',
+                'arq.certificado_at',
+                'arq.anulado_at',
+                'arq.codigo_agente_historico',
+                'arq.nombre_negocio_historico',
+                'arq.nombre_propietario_historico',
+                'arq.ruta_historica',
+                'arq.region_historica',
+                'a.codigo_agente as codigo_agente_actual',
+            ])
+            ->first();
+
+        if (! $registro) {
+            return [];
+        }
+
+        return [
+            'id' => (int) $registro->id,
+            'numero_arqueo' => $registro->numero_arqueo,
+            'agente_id' => (int) $registro->agente_id,
+            'creado_por' => (int) $registro->creado_por,
+            'tipo' => $registro->tipo,
+            'estado' => $registro->estado,
+            'fecha_arqueo' => (string) $registro->fecha_arqueo,
+            'total_billetes' =>
+                (float) $registro->total_billetes,
+            'total_monedas' =>
+                (float) $registro->total_monedas,
+            'total_arqueado' =>
+                (float) $registro->total_arqueado,
+            'saldo_sistema' =>
+                (float) $registro->saldo_sistema,
+            'diferencia' =>
+                (float) $registro->diferencia,
+            'pendiente_certificacion_at' =>
+                $registro->pendiente_certificacion_at !== null
+                    ? (string) $registro->pendiente_certificacion_at
+                    : null,
+            'certificado_at' =>
+                $registro->certificado_at !== null
+                    ? (string) $registro->certificado_at
+                    : null,
+            'anulado_at' =>
+                $registro->anulado_at !== null
+                    ? (string) $registro->anulado_at
+                    : null,
+            'codigo_agente_historico' =>
+                $registro->codigo_agente_historico,
+            'nombre_negocio_historico' =>
+                $registro->nombre_negocio_historico,
+            'nombre_propietario_historico' =>
+                $registro->nombre_propietario_historico,
+            'ruta_historica' =>
+                $registro->ruta_historica,
+            'region_historica' =>
+                $registro->region_historica,
+        ];
     }
 
     private function validarJefe(Usuario $usuario): void

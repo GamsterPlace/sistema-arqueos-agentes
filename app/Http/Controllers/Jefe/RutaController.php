@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Jefe;
 
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -125,14 +126,35 @@ class RutaController extends Controller
             return back()->withInput()->with('warning', 'La región seleccionada está inactiva.');
         }
 
-        DB::table('rutas')->insert([
-            'codigo' => trim($datos['codigo']),
-            'nombre' => trim($datos['nombre']),
-            'region_id' => $datos['region_id'],
-            'estado' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        DB::transaction(function () use ($datos, $usuario): void {
+            $rutaId = DB::table('rutas')->insertGetId([
+                'codigo' => trim($datos['codigo']),
+                'nombre' => trim($datos['nombre']),
+                'region_id' => $datos['region_id'],
+                'estado' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $nuevos = $this->obtenerValoresAuditoriaRuta($rutaId);
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Rutas',
+                accion: 'CREAR_RUTA',
+                tablaAfectada: 'rutas',
+                registroId: $rutaId,
+                descripcion: 'Se creó la ruta '
+                    . ($nuevos['codigo'] ?? ('#' . $rutaId))
+                    . ' — '
+                    . ($nuevos['nombre'] ?? 'Sin nombre')
+                    . ' en la región '
+                    . ($nuevos['region_nombre'] ?? 'Sin región')
+                    . '.',
+                valoresAnteriores: null,
+                valoresNuevos: $nuevos
+            );
+        });
 
         return redirect()->route('jefe.rutas.index')
             ->with('success', 'La ruta fue creada correctamente.');
@@ -157,12 +179,33 @@ class RutaController extends Controller
             return back()->withInput()->with('warning', 'La región seleccionada está inactiva.');
         }
 
-        DB::table('rutas')->where('id', $ruta)->update([
-            'codigo' => trim($datos['codigo']),
-            'nombre' => trim($datos['nombre']),
-            'region_id' => $datos['region_id'],
-            'updated_at' => now(),
-        ]);
+        DB::transaction(function () use ($ruta, $datos, $usuario): void {
+            $anteriores = $this->obtenerValoresAuditoriaRuta($ruta);
+
+            DB::table('rutas')->where('id', $ruta)->update([
+                'codigo' => trim($datos['codigo']),
+                'nombre' => trim($datos['nombre']),
+                'region_id' => $datos['region_id'],
+                'updated_at' => now(),
+            ]);
+
+            $nuevos = $this->obtenerValoresAuditoriaRuta($ruta);
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Rutas',
+                accion: 'EDITAR_RUTA',
+                tablaAfectada: 'rutas',
+                registroId: $ruta,
+                descripcion: 'Se actualizó la ruta '
+                    . ($nuevos['codigo'] ?? ('#' . $ruta))
+                    . ' — '
+                    . ($nuevos['nombre'] ?? 'Sin nombre')
+                    . '.',
+                valoresAnteriores: $anteriores,
+                valoresNuevos: $nuevos
+            );
+        });
 
         return redirect()->route('jefe.rutas.index')
             ->with('success', 'La ruta fue actualizada correctamente.');
@@ -259,13 +302,50 @@ class RutaController extends Controller
             return back()->with('warning', 'Uno o más agentes ya no pertenecen a la ruta seleccionada.');
         }
 
-        DB::transaction(function () use ($validos, $destino): void {
+        DB::transaction(function () use ($validos, $destino, $usuario): void {
+            $agentesAnteriores = [];
+
+            foreach ($validos as $agenteId) {
+                $agenteId = (int) $agenteId;
+                $agentesAnteriores[$agenteId] =
+                    $this->obtenerValoresAuditoriaAgente($agenteId);
+            }
+
             DB::table('agentes')
                 ->whereIn('id', $validos)
                 ->update([
                     'ruta_id' => $destino->id,
                     'updated_at' => now(),
                 ]);
+
+            foreach ($validos as $agenteId) {
+                $agenteId = (int) $agenteId;
+                $anteriores = $agentesAnteriores[$agenteId] ?? [];
+                $nuevos = $this->obtenerValoresAuditoriaAgente($agenteId);
+
+                app(AuditoriaService::class)->registrar(
+                    usuario: $usuario,
+                    modulo: 'Rutas',
+                    accion: 'REASIGNAR_AGENTE_RUTA',
+                    tablaAfectada: 'agentes',
+                    registroId: $agenteId,
+                    descripcion: 'Se reasignó el agente '
+                        . ($nuevos['codigo_agente'] ?? ('#' . $agenteId))
+                        . ' — '
+                        . ($nuevos['nombre_negocio'] ?? 'Sin nombre')
+                        . ' de la ruta '
+                        . ($anteriores['ruta_codigo'] ?? '—')
+                        . ' — '
+                        . ($anteriores['ruta_nombre'] ?? 'Sin ruta')
+                        . ' a la ruta '
+                        . ($nuevos['ruta_codigo'] ?? '—')
+                        . ' — '
+                        . ($nuevos['ruta_nombre'] ?? $destino->nombre)
+                        . '.',
+                    valoresAnteriores: $anteriores,
+                    valoresNuevos: $nuevos
+                );
+            }
         });
 
         return redirect()->route('jefe.rutas.agentes', $ruta)
@@ -314,15 +394,109 @@ class RutaController extends Controller
             }
         }
 
-        DB::table('rutas')->where('id', $ruta)->update([
-            'estado' => $nuevoEstado,
-            'updated_at' => now(),
-        ]);
+        DB::transaction(function () use ($ruta, $nuevoEstado, $usuario): void {
+            $anteriores = $this->obtenerValoresAuditoriaRuta($ruta);
+
+            DB::table('rutas')->where('id', $ruta)->update([
+                'estado' => $nuevoEstado,
+                'updated_at' => now(),
+            ]);
+
+            $nuevos = $this->obtenerValoresAuditoriaRuta($ruta);
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Rutas',
+                accion: $nuevoEstado ? 'ACTIVAR_RUTA' : 'DESACTIVAR_RUTA',
+                tablaAfectada: 'rutas',
+                registroId: $ruta,
+                descripcion: 'Se '
+                    . ($nuevoEstado ? 'activó' : 'desactivó')
+                    . ' la ruta '
+                    . ($nuevos['codigo'] ?? ('#' . $ruta))
+                    . ' — '
+                    . ($nuevos['nombre'] ?? 'Sin nombre')
+                    . '.',
+                valoresAnteriores: [
+                    'estado' => $anteriores['estado'] ?? null,
+                ],
+                valoresNuevos: [
+                    'estado' => $nuevos['estado'] ?? null,
+                ]
+            );
+        });
 
         return redirect()->route('jefe.rutas.index')->with(
             'success',
             $nuevoEstado ? 'La ruta fue activada correctamente.' : 'La ruta fue desactivada correctamente.'
         );
+    }
+
+    private function obtenerValoresAuditoriaRuta(int $rutaId): array
+    {
+        $registro = DB::table('rutas as r')
+            ->join('regiones as reg', 'reg.id', '=', 'r.region_id')
+            ->where('r.id', $rutaId)
+            ->select([
+                'r.id',
+                'r.codigo',
+                'r.nombre',
+                'r.region_id',
+                'r.estado',
+                'reg.nombre as region_nombre',
+            ])
+            ->first();
+
+        if (! $registro) {
+            return [];
+        }
+
+        return [
+            'id' => (int) $registro->id,
+            'codigo' => $registro->codigo,
+            'nombre' => $registro->nombre,
+            'region_id' => (int) $registro->region_id,
+            'region_nombre' => $registro->region_nombre,
+            'estado' => (bool) $registro->estado,
+        ];
+    }
+
+    private function obtenerValoresAuditoriaAgente(int $agenteId): array
+    {
+        $registro = DB::table('agentes as a')
+            ->leftJoin('rutas as r', 'r.id', '=', 'a.ruta_id')
+            ->leftJoin('regiones as reg', 'reg.id', '=', 'r.region_id')
+            ->where('a.id', $agenteId)
+            ->select([
+                'a.id',
+                'a.codigo_agente',
+                'a.nombre_negocio',
+                'a.ruta_id',
+                'r.codigo as ruta_codigo',
+                'r.nombre as ruta_nombre',
+                'r.region_id',
+                'reg.nombre as region_nombre',
+            ])
+            ->first();
+
+        if (! $registro) {
+            return [];
+        }
+
+        return [
+            'id' => (int) $registro->id,
+            'codigo_agente' => $registro->codigo_agente,
+            'nombre_negocio' => $registro->nombre_negocio,
+            'ruta_id' => $registro->ruta_id !== null
+                ? (int) $registro->ruta_id
+                : null,
+            'ruta_codigo' => $registro->ruta_codigo,
+            'ruta_nombre' => $registro->ruta_nombre,
+            'region_id' => $registro->region_id !== null
+                ? (int) $registro->region_id
+                : null,
+            'region_nombre' => $registro->region_nombre,
+        ];
     }
 
     private function validarJefe(Usuario $usuario): void

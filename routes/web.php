@@ -675,10 +675,10 @@ Route::middleware([
             [AnulacionController::class, 'index']
         )->name('anulaciones.index');
 
-        Route::get('
-            /anulaciones/{arqueo}',
-            [AnulacionController::class, 'show'])
-        ->name('anulaciones.show');
+        Route::get(
+            '/anulaciones/{arqueo}',
+            [AnulacionController::class, 'show']
+        )->name('anulaciones.show');
 
          Route::get(
             '/perfil',

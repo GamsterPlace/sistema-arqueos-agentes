@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Agente;
 
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -47,6 +48,7 @@ class PerfilController extends Controller
         $usuario = $request->user();
 
         $usuario->loadMissing([
+            'rol',
             'datosPersonales',
             'agente',
         ]);
@@ -98,21 +100,120 @@ class PerfilController extends Controller
             $usuario,
             $datosValidados
         ): void {
+            /*
+            |--------------------------------------------------------------------------
+            | VALORES ANTERIORES
+            |--------------------------------------------------------------------------
+            */
+
+            $usuarioAnterior = [
+                'id' => (int) $usuario->id,
+                'nombre_usuario' => $usuario->nombre_usuario,
+            ];
+
+            $datosPersonalesAnteriores = $usuario->datosPersonales
+                ? [
+                    'id' => (int) $usuario->datosPersonales->id,
+                    'usuario_id' =>
+                        (int) $usuario->datosPersonales->usuario_id,
+                    'nombres' =>
+                        $usuario->datosPersonales->nombres,
+                    'apellidos' =>
+                        $usuario->datosPersonales->apellidos,
+                ]
+                : null;
+
+            /*
+            |--------------------------------------------------------------------------
+            | ACTUALIZAR USUARIO
+            |--------------------------------------------------------------------------
+            */
+
             $usuario->update([
                 'nombre_usuario' =>
                     trim($datosValidados['nombre_usuario']),
             ]);
 
-            $usuario->datosPersonales()->updateOrCreate(
-                [
-                    'usuario_id' => $usuario->id,
-                ],
-                [
-                    'nombres' =>
-                        trim($datosValidados['nombres']),
+            /*
+            |--------------------------------------------------------------------------
+            | ACTUALIZAR DATOS PERSONALES
+            |--------------------------------------------------------------------------
+            */
 
+            $datosPersonales = $usuario
+                ->datosPersonales()
+                ->updateOrCreate(
+                    [
+                        'usuario_id' => $usuario->id,
+                    ],
+                    [
+                        'nombres' =>
+                            trim($datosValidados['nombres']),
+
+                        'apellidos' =>
+                            trim($datosValidados['apellidos']),
+                    ]
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | REFRESCAR DATOS
+            |--------------------------------------------------------------------------
+            */
+
+            $usuario->refresh();
+
+            /*
+            |--------------------------------------------------------------------------
+            | AUDITORÍA - USUARIO
+            |--------------------------------------------------------------------------
+            */
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Perfil Agente',
+                accion: 'ACTUALIZAR_PERFIL',
+                tablaAfectada: 'usuarios',
+                registroId: $usuario->id,
+                descripcion:
+                    'El Agente actualizó la información de su perfil.',
+                valoresAnteriores: $usuarioAnterior,
+                valoresNuevos: [
+                    'id' => (int) $usuario->id,
+                    'nombre_usuario' =>
+                        $usuario->nombre_usuario,
+                ]
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | AUDITORÍA - DATOS PERSONALES
+            |--------------------------------------------------------------------------
+            */
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Perfil Agente',
+                accion: $datosPersonalesAnteriores === null
+                    ? 'CREAR_DATOS_PERSONALES'
+                    : 'ACTUALIZAR_DATOS_PERSONALES',
+                tablaAfectada: 'datos_personales',
+                registroId: $datosPersonales->id,
+                descripcion:
+                    $datosPersonalesAnteriores === null
+                        ? 'El Agente registró sus datos personales desde su perfil.'
+                        : 'El Agente actualizó sus datos personales desde su perfil.',
+                valoresAnteriores:
+                    $datosPersonalesAnteriores,
+                valoresNuevos: [
+                    'id' =>
+                        (int) $datosPersonales->id,
+                    'usuario_id' =>
+                        (int) $datosPersonales->usuario_id,
+                    'nombres' =>
+                        $datosPersonales->nombres,
                     'apellidos' =>
-                        trim($datosValidados['apellidos']),
+                        $datosPersonales->apellidos,
                 ]
             );
         });

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Promotor;
 
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -84,7 +85,10 @@ class PerfilController extends Controller
 
         $this->validarPromotor($usuario);
 
-        $usuario->loadMissing('datosPersonales');
+        $usuario->loadMissing([
+            'rol',
+            'datosPersonales',
+        ]);
 
         $datosValidados = $request->validate(
             [
@@ -118,17 +122,69 @@ class PerfilController extends Controller
             $usuario,
             $datosValidados
         ): void {
+            $usuarioAnterior = [
+                'id' => (int) $usuario->id,
+                'nombre_usuario' => $usuario->nombre_usuario,
+            ];
+
+            $datosPersonalesAnteriores = $usuario->datosPersonales
+                ? [
+                    'id' => (int) $usuario->datosPersonales->id,
+                    'usuario_id' => (int) $usuario->datosPersonales->usuario_id,
+                    'nombres' => $usuario->datosPersonales->nombres,
+                    'apellidos' => $usuario->datosPersonales->apellidos,
+                ]
+                : null;
+
             $usuario->update([
-                'nombre_usuario' => $datosValidados['nombre_usuario'],
+                'nombre_usuario' => trim($datosValidados['nombre_usuario']),
             ]);
 
-            $usuario->datosPersonales()->updateOrCreate(
+            $datosPersonales = $usuario->datosPersonales()->updateOrCreate(
                 [
                     'usuario_id' => $usuario->id,
                 ],
                 [
-                    'nombres' => $datosValidados['nombres'],
-                    'apellidos' => $datosValidados['apellidos'],
+                    'nombres' => trim($datosValidados['nombres']),
+                    'apellidos' => trim($datosValidados['apellidos']),
+                ]
+            );
+
+            $usuario->refresh();
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Perfil Promotor',
+                accion: 'ACTUALIZAR_PERFIL',
+                tablaAfectada: 'usuarios',
+                registroId: $usuario->id,
+                descripcion:
+                    'El Promotor actualizó la información de su perfil.',
+                valoresAnteriores: $usuarioAnterior,
+                valoresNuevos: [
+                    'id' => (int) $usuario->id,
+                    'nombre_usuario' => $usuario->nombre_usuario,
+                ]
+            );
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Perfil Promotor',
+                accion: $datosPersonalesAnteriores === null
+                    ? 'CREAR_DATOS_PERSONALES'
+                    : 'ACTUALIZAR_DATOS_PERSONALES',
+                tablaAfectada: 'datos_personales',
+                registroId: $datosPersonales->id,
+                descripcion:
+                    $datosPersonalesAnteriores === null
+                        ? 'El Promotor registró sus datos personales desde su perfil.'
+                        : 'El Promotor actualizó sus datos personales desde su perfil.',
+                valoresAnteriores: $datosPersonalesAnteriores,
+                valoresNuevos: [
+                    'id' => (int) $datosPersonales->id,
+                    'usuario_id' => (int) $datosPersonales->usuario_id,
+                    'nombres' => $datosPersonales->nombres,
+                    'apellidos' => $datosPersonales->apellidos,
                 ]
             );
         });

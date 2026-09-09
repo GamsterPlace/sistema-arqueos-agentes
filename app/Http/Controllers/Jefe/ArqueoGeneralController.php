@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Jefe;
 use App\Http\Controllers\Controller;
 use App\Models\Arqueo;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,7 +55,10 @@ class ArqueoGeneralController extends Controller
 
         $rutas = DB::table('rutas as r')
             ->join('regiones as reg', 'reg.id', '=', 'r.region_id')
-            ->when($regionId > 0, fn ($q) => $q->where('r.region_id', $regionId))
+            ->when(
+                $regionId > 0,
+                fn ($q) => $q->where('r.region_id', $regionId)
+            )
             ->orderBy('reg.nombre')
             ->orderBy('r.nombre')
             ->get([
@@ -70,26 +74,114 @@ class ArqueoGeneralController extends Controller
             ->leftJoin('rutas as r', 'r.id', '=', 'a.ruta_id')
             ->leftJoin('regiones as reg', 'reg.id', '=', 'r.region_id')
             ->leftJoin('usuarios as uc', 'uc.id', '=', 'arq.creado_por')
-            ->leftJoin('datos_personales as dpc', 'dpc.usuario_id', '=', 'uc.id')
-            ->when($buscar !== '', function ($q) use ($buscar): void {
-                $q->where(function ($s) use ($buscar): void {
-                    $s->where('arq.numero_arqueo', 'like', '%' . $buscar . '%')
-                      ->orWhere('a.codigo_agente', 'like', '%' . $buscar . '%')
-                      ->orWhere('a.nombre_negocio', 'like', '%' . $buscar . '%')
-                      ->orWhere('a.nombre_propietario', 'like', '%' . $buscar . '%')
-                      ->orWhere('uc.usuario', 'like', '%' . $buscar . '%')
-                      ->orWhere('dpc.nombres', 'like', '%' . $buscar . '%')
-                      ->orWhere('dpc.apellidos', 'like', '%' . $buscar . '%');
-                });
-            })
-            ->when($agenteId > 0, fn ($q) => $q->where('arq.agente_id', $agenteId))
-            ->when($promotorId > 0, fn ($q) => $q->where('arq.creado_por', $promotorId))
-            ->when($regionId > 0, fn ($q) => $q->where('reg.id', $regionId))
-            ->when($rutaId > 0, fn ($q) => $q->where('r.id', $rutaId))
-            ->when($tipo !== '', fn ($q) => $q->where('arq.tipo', $tipo))
-            ->when($estado !== '', fn ($q) => $q->where('arq.estado', $estado))
-            ->when($desde, fn ($q) => $q->whereDate('arq.fecha_arqueo', '>=', $desde))
-            ->when($hasta, fn ($q) => $q->whereDate('arq.fecha_arqueo', '<=', $hasta))
+            ->leftJoin(
+                'datos_personales as dpc',
+                'dpc.usuario_id',
+                '=',
+                'uc.id'
+            )
+            ->when(
+                $buscar !== '',
+                function ($q) use ($buscar): void {
+                    $q->where(
+                        function ($s) use ($buscar): void {
+                            $s->where(
+                                'arq.numero_arqueo',
+                                'like',
+                                '%' . $buscar . '%'
+                            )
+                                ->orWhere(
+                                    'a.codigo_agente',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'a.nombre_negocio',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'a.nombre_propietario',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'uc.usuario',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'dpc.nombres',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'dpc.apellidos',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                );
+                        }
+                    );
+                }
+            )
+            ->when(
+                $agenteId > 0,
+                fn ($q) => $q->where(
+                    'arq.agente_id',
+                    $agenteId
+                )
+            )
+            ->when(
+                $promotorId > 0,
+                fn ($q) => $q->where(
+                    'arq.creado_por',
+                    $promotorId
+                )
+            )
+            ->when(
+                $regionId > 0,
+                fn ($q) => $q->where(
+                    'reg.id',
+                    $regionId
+                )
+            )
+            ->when(
+                $rutaId > 0,
+                fn ($q) => $q->where(
+                    'r.id',
+                    $rutaId
+                )
+            )
+            ->when(
+                $tipo !== '',
+                fn ($q) => $q->where(
+                    'arq.tipo',
+                    $tipo
+                )
+            )
+            ->when(
+                $estado !== '',
+                fn ($q) => $q->where(
+                    'arq.estado',
+                    $estado
+                )
+            )
+            ->when(
+                $desde,
+                fn ($q) => $q->whereDate(
+                    'arq.fecha_arqueo',
+                    '>=',
+                    $desde
+                )
+            )
+            ->when(
+                $hasta,
+                fn ($q) => $q->whereDate(
+                    'arq.fecha_arqueo',
+                    '<=',
+                    $hasta
+                )
+            )
             ->select([
                 'arq.id',
                 'arq.numero_arqueo',
@@ -119,7 +211,9 @@ class ArqueoGeneralController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $totalArqueos = DB::table('arqueos')->count();
+        $totalArqueos = DB::table('arqueos')
+            ->count();
+
         $arqueosHoy = DB::table('arqueos')
             ->whereDate('fecha_arqueo', today())
             ->where('estado', '!=', 'ANULADO')
@@ -142,37 +236,45 @@ class ArqueoGeneralController extends Controller
             ->where('estado', '!=', 'ANULADO')
             ->count();
 
-        return view('jefe.arqueos.index', compact(
-            'arqueos',
-            'agentes',
-            'promotores',
-            'regiones',
-            'rutas',
-            'buscar',
-            'agenteId',
-            'promotorId',
-            'regionId',
-            'rutaId',
-            'tipo',
-            'estado',
-            'desde',
-            'hasta',
-            'totalArqueos',
-            'arqueosHoy',
-            'pendientes',
-            'certificados',
-            'anulados',
-            'extemporaneos'
-        ));
+        return view(
+            'jefe.arqueos.index',
+            compact(
+                'arqueos',
+                'agentes',
+                'promotores',
+                'regiones',
+                'rutas',
+                'buscar',
+                'agenteId',
+                'promotorId',
+                'regionId',
+                'rutaId',
+                'tipo',
+                'estado',
+                'desde',
+                'hasta',
+                'totalArqueos',
+                'arqueosHoy',
+                'pendientes',
+                'certificados',
+                'anulados',
+                'extemporaneos'
+            )
+        );
     }
 
-    public function show(Request $request, Arqueo $arqueo): View
-    {
+    public function show(
+        Request $request,
+        Arqueo $arqueo
+    ): View {
         /** @var Usuario $usuario */
         $usuario = $request->user();
         $this->validarJefe($usuario);
 
-        $arqueo->loadMissing(['detalles', 'firmas']);
+        $arqueo->loadMissing([
+            'detalles',
+            'firmas',
+        ]);
 
         $billetes = $arqueo->detalles
             ->where('tipo', 'BILLETE')
@@ -185,9 +287,22 @@ class ArqueoGeneralController extends Controller
             ->values();
 
         $creador = DB::table('usuarios as u')
-            ->leftJoin('datos_personales as dp', 'dp.usuario_id', '=', 'u.id')
-            ->leftJoin('roles as rol', 'rol.id', '=', 'u.rol_id')
-            ->where('u.id', $arqueo->creado_por)
+            ->leftJoin(
+                'datos_personales as dp',
+                'dp.usuario_id',
+                '=',
+                'u.id'
+            )
+            ->leftJoin(
+                'roles as rol',
+                'rol.id',
+                '=',
+                'u.rol_id'
+            )
+            ->where(
+                'u.id',
+                $arqueo->creado_por
+            )
             ->select([
                 'u.id',
                 'u.usuario',
@@ -206,22 +321,30 @@ class ArqueoGeneralController extends Controller
             true
         );
 
-        return view('jefe.arqueos.show', compact(
-            'arqueo',
-            'billetes',
-            'monedas',
-            'creador',
-            'puedeAnular'
-        ));
+        return view(
+            'jefe.arqueos.show',
+            compact(
+                'arqueo',
+                'billetes',
+                'monedas',
+                'creador',
+                'puedeAnular'
+            )
+        );
     }
 
-    public function imprimir(Request $request, Arqueo $arqueo): Response
-    {
+    public function imprimir(
+        Request $request,
+        Arqueo $arqueo
+    ): Response {
         /** @var Usuario $usuario */
         $usuario = $request->user();
         $this->validarJefe($usuario);
 
-        $arqueo->loadMissing(['detalles', 'firmas']);
+        $arqueo->loadMissing([
+            'detalles',
+            'firmas',
+        ]);
 
         $billetes = $arqueo->detalles
             ->where('tipo', 'BILLETE')
@@ -235,10 +358,19 @@ class ArqueoGeneralController extends Controller
 
         $pdf = Pdf::loadView(
             'jefe.arqueos.pdf',
-            compact('arqueo', 'billetes', 'monedas')
-        )->setPaper('letter', 'portrait');
+            compact(
+                'arqueo',
+                'billetes',
+                'monedas'
+            )
+        )->setPaper(
+            'letter',
+            'portrait'
+        );
 
-        return $pdf->stream($arqueo->numero_arqueo . '.pdf');
+        return $pdf->stream(
+            $arqueo->numero_arqueo . '.pdf'
+        );
     }
 
     public function anular(
@@ -322,7 +454,50 @@ class ArqueoGeneralController extends Controller
                     'El arqueo no se encuentra disponible para anulación.'
                 );
 
-                $usuario->loadMissing('datosPersonales');
+                /*
+                |--------------------------------------------------------------------------
+                | Estado anterior
+                |--------------------------------------------------------------------------
+                */
+
+                $valoresAnteriores = [
+                    'id' =>
+                        (int) $arqueoBloqueado->id,
+
+                    'numero_arqueo' =>
+                        $arqueoBloqueado->numero_arqueo,
+
+                    'agente_id' =>
+                        (int) $arqueoBloqueado->agente_id,
+
+                    'tipo' =>
+                        $arqueoBloqueado->tipo,
+
+                    'estado' =>
+                        $arqueoBloqueado->estado,
+
+                    'fecha_arqueo' =>
+                        $arqueoBloqueado->fecha_arqueo,
+
+                    'total_arqueado' =>
+                        $arqueoBloqueado->total_arqueado,
+
+                    'saldo_sistema' =>
+                        $arqueoBloqueado->saldo_sistema,
+
+                    'diferencia' =>
+                        $arqueoBloqueado->diferencia,
+
+                    'observaciones' =>
+                        $arqueoBloqueado->observaciones,
+
+                    'anulado_at' =>
+                        $arqueoBloqueado->anulado_at,
+                ];
+
+                $usuario->loadMissing(
+                    'datosPersonales'
+                );
 
                 $datosPersonales =
                     $usuario->datosPersonales;
@@ -348,7 +523,9 @@ class ArqueoGeneralController extends Controller
                 }
 
                 $motivo = trim(
-                    $datosValidados['motivo_anulacion']
+                    $datosValidados[
+                        'motivo_anulacion'
+                    ]
                 );
 
                 $observacionAnterior = trim(
@@ -358,15 +535,27 @@ class ArqueoGeneralController extends Controller
 
                 $registroAnulacion = sprintf(
                     '[ANULACIÓN %s | Jefe de Agentes: %s | Usuario ID: %d] %s',
-                    now()->format('d/m/Y H:i:s'),
+                    now()->format(
+                        'd/m/Y H:i:s'
+                    ),
                     $nombreJefe,
                     $usuario->id,
                     $motivo
                 );
 
+                /*
+                |--------------------------------------------------------------------------
+                | Anulación
+                |--------------------------------------------------------------------------
+                */
+
                 $arqueoBloqueado->update([
-                    'estado' => 'ANULADO',
-                    'anulado_at' => now(),
+                    'estado' =>
+                        'ANULADO',
+
+                    'anulado_at' =>
+                        now(),
+
                     'observaciones' =>
                         $observacionAnterior !== ''
                             ? $observacionAnterior
@@ -375,6 +564,86 @@ class ArqueoGeneralController extends Controller
                                 . $registroAnulacion
                             : $registroAnulacion,
                 ]);
+
+                $arqueoBloqueado->refresh();
+
+                /*
+                |--------------------------------------------------------------------------
+                | Estado nuevo
+                |--------------------------------------------------------------------------
+                */
+
+                $valoresNuevos = [
+                    'id' =>
+                        (int) $arqueoBloqueado->id,
+
+                    'numero_arqueo' =>
+                        $arqueoBloqueado->numero_arqueo,
+
+                    'agente_id' =>
+                        (int) $arqueoBloqueado->agente_id,
+
+                    'tipo' =>
+                        $arqueoBloqueado->tipo,
+
+                    'estado' =>
+                        $arqueoBloqueado->estado,
+
+                    'fecha_arqueo' =>
+                        $arqueoBloqueado->fecha_arqueo,
+
+                    'total_arqueado' =>
+                        $arqueoBloqueado->total_arqueado,
+
+                    'saldo_sistema' =>
+                        $arqueoBloqueado->saldo_sistema,
+
+                    'diferencia' =>
+                        $arqueoBloqueado->diferencia,
+
+                    'observaciones' =>
+                        $arqueoBloqueado->observaciones,
+
+                    'anulado_at' =>
+                        $arqueoBloqueado->anulado_at,
+
+                    'motivo_anulacion' =>
+                        $motivo,
+
+                    'anulado_por_usuario_id' =>
+                        (int) $usuario->id,
+
+                    'anulado_por' =>
+                        $nombreJefe,
+                ];
+
+                /*
+                |--------------------------------------------------------------------------
+                | Auditoría automática
+                |--------------------------------------------------------------------------
+                */
+
+                app(AuditoriaService::class)
+                    ->registrar(
+                        usuario: $usuario,
+                        modulo: 'Arqueos',
+                        accion: 'ANULAR_ARQUEO',
+                        tablaAfectada: 'arqueos',
+                        registroId:
+                            $arqueoBloqueado->id,
+                        descripcion:
+                            'El Jefe de Agentes '
+                            . $nombreJefe
+                            . ' anuló el arqueo '
+                            . $arqueoBloqueado
+                                ->numero_arqueo
+                            . '. Motivo: '
+                            . $motivo,
+                        valoresAnteriores:
+                            $valoresAnteriores,
+                        valoresNuevos:
+                            $valoresNuevos
+                    );
 
                 return redirect()
                     ->route(
@@ -389,12 +658,15 @@ class ArqueoGeneralController extends Controller
         );
     }
 
-    private function validarJefe(Usuario $usuario): void
-    {
+    private function validarJefe(
+        Usuario $usuario
+    ): void {
         $usuario->loadMissing('rol');
 
         abort_if(
-            ! $usuario->rol || $usuario->rol->nombre !== 'jefedeAgentes',
+            ! $usuario->rol
+            || $usuario->rol->nombre
+                !== 'jefedeAgentes',
             403,
             'No tiene autorización para acceder a esta sección.'
         );

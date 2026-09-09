@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Promotor;
 use App\Http\Controllers\Controller;
 use App\Models\HabilitacionArqueoAtrasado;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -207,7 +208,7 @@ class HabilitacionArqueoAtrasadoController extends Controller
                 ->withInput();
         }
 
-        HabilitacionArqueoAtrasado::create([
+        $habilitacion = HabilitacionArqueoAtrasado::create([
             'agente_id' => $agenteId,
             'fecha_autorizada' => $fechaAutorizada,
             'motivo' => trim($datosValidados['motivo']),
@@ -216,6 +217,44 @@ class HabilitacionArqueoAtrasadoController extends Controller
             'estado' => 'PENDIENTE',
             'utilizado_at' => null,
         ]);
+
+        $agente = DB::table('agentes')
+            ->where('id', $agenteId)
+            ->first([
+                'codigo_agente',
+                'nombre_negocio',
+            ]);
+
+        app(AuditoriaService::class)->registrar(
+            usuario: $usuario,
+            modulo: 'Arqueos Extemporáneos',
+            accion: 'HABILITAR_ARQUEO_ATRASADO',
+            tablaAfectada: 'habilitaciones_arqueos_atrasados',
+            registroId: $habilitacion->id,
+            descripcion:
+                'El Promotor habilitó un arqueo fuera de tiempo para el Agente '
+                . ($agente?->codigo_agente ?? $agenteId)
+                . ' — '
+                . ($agente?->nombre_negocio ?? 'Agente')
+                . ', correspondiente a la fecha '
+                . $fechaAutorizada
+                . '.',
+            valoresAnteriores: null,
+            valoresNuevos: [
+                'id' => (int) $habilitacion->id,
+                'agente_id' => (int) $habilitacion->agente_id,
+                'fecha_autorizada' =>
+                    $habilitacion->fecha_autorizada,
+                'motivo' => $habilitacion->motivo,
+                'autorizado_por' =>
+                    (int) $habilitacion->autorizado_por,
+                'autorizado_at' =>
+                    $habilitacion->autorizado_at,
+                'estado' => $habilitacion->estado,
+                'utilizado_at' =>
+                    $habilitacion->utilizado_at,
+            ]
+        );
 
         return redirect()
             ->route(
@@ -253,9 +292,61 @@ class HabilitacionArqueoAtrasadoController extends Controller
             'Solo se pueden cancelar habilitaciones pendientes.'
         );
 
+        $valoresAnteriores = [
+            'id' => (int) $habilitacion->id,
+            'agente_id' => (int) $habilitacion->agente_id,
+            'fecha_autorizada' => $habilitacion->fecha_autorizada,
+            'motivo' => $habilitacion->motivo,
+            'autorizado_por' => (int) $habilitacion->autorizado_por,
+            'autorizado_at' => $habilitacion->autorizado_at,
+            'estado' => $habilitacion->estado,
+            'utilizado_at' => $habilitacion->utilizado_at,
+        ];
+
         $habilitacion->update([
             'estado' => 'CANCELADA',
         ]);
+
+        $habilitacion->refresh();
+
+        $agente = DB::table('agentes')
+            ->where('id', $habilitacion->agente_id)
+            ->first([
+                'codigo_agente',
+                'nombre_negocio',
+            ]);
+
+        app(AuditoriaService::class)->registrar(
+            usuario: $usuario,
+            modulo: 'Arqueos Extemporáneos',
+            accion: 'CANCELAR_HABILITACION_ARQUEO_ATRASADO',
+            tablaAfectada: 'habilitaciones_arqueos_atrasados',
+            registroId: $habilitacion->id,
+            descripcion:
+                'El Promotor canceló la habilitación de arqueo fuera de tiempo '
+                . 'para el Agente '
+                . ($agente?->codigo_agente ?? $habilitacion->agente_id)
+                . ' — '
+                . ($agente?->nombre_negocio ?? 'Agente')
+                . ', correspondiente a la fecha '
+                . $habilitacion->fecha_autorizada
+                . '.',
+            valoresAnteriores: $valoresAnteriores,
+            valoresNuevos: [
+                'id' => (int) $habilitacion->id,
+                'agente_id' => (int) $habilitacion->agente_id,
+                'fecha_autorizada' =>
+                    $habilitacion->fecha_autorizada,
+                'motivo' => $habilitacion->motivo,
+                'autorizado_por' =>
+                    (int) $habilitacion->autorizado_por,
+                'autorizado_at' =>
+                    $habilitacion->autorizado_at,
+                'estado' => $habilitacion->estado,
+                'utilizado_at' =>
+                    $habilitacion->utilizado_at,
+            ]
+        );
 
         return redirect()
             ->route(

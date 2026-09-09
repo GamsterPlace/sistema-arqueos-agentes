@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Administrador;
 
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -203,7 +204,10 @@ class UsuarioController extends Controller
             ],
         ]);
 
-        DB::transaction(function () use ($validated): void {
+        DB::transaction(function () use (
+            $validated,
+            $usuario
+        ): void {
             $usuarioId = DB::table('usuarios')
                 ->insertGetId([
                     'usuario' => $validated['usuario'],
@@ -224,6 +228,24 @@ class UsuarioController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+
+            $nuevos = $this->obtenerValoresAuditoriaUsuario(
+                $usuarioId
+            );
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $usuario,
+                modulo: 'Usuarios',
+                accion: 'CREAR_USUARIO',
+                tablaAfectada: 'usuarios',
+                registroId: $usuarioId,
+                descripcion:
+                    'Se creó la cuenta de usuario '
+                    . $validated['usuario']
+                    . ' desde el módulo de Administración.',
+                valoresAnteriores: null,
+                valoresNuevos: $nuevos
+            );
         });
 
         return redirect()
@@ -379,8 +401,13 @@ class UsuarioController extends Controller
 
         DB::transaction(function () use (
             $usuario,
-            $validated
+            $validated,
+            $auth
         ): void {
+            $anteriores = $this->obtenerValoresAuditoriaUsuario(
+                $usuario
+            );
+
             DB::table('usuarios')
                 ->where('id', $usuario)
                 ->update([
@@ -402,6 +429,25 @@ class UsuarioController extends Controller
                         'created_at' => now(),
                     ]
                 );
+
+            $nuevos = $this->obtenerValoresAuditoriaUsuario(
+                $usuario
+            );
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $auth,
+                modulo: 'Usuarios',
+                accion: 'EDITAR_USUARIO',
+                tablaAfectada: 'usuarios',
+                registroId: $usuario,
+                descripcion:
+                    'Se actualizaron los datos generales, rol '
+                    . 'o estado de la cuenta '
+                    . ($nuevos['usuario'] ?? ('#' . $usuario))
+                    . '.',
+                valoresAnteriores: $anteriores,
+                valoresNuevos: $nuevos
+            );
         });
 
         return redirect()
@@ -448,12 +494,48 @@ class UsuarioController extends Controller
                 ? 'INACTIVO'
                 : 'ACTIVO';
 
-        DB::table('usuarios')
-            ->where('id', $usuario)
-            ->update([
-                'estado' => $nuevoEstado,
-                'updated_at' => now(),
-            ]);
+        DB::transaction(function () use (
+            $usuario,
+            $nuevoEstado,
+            $auth
+        ): void {
+            $anteriores = $this->obtenerValoresAuditoriaUsuario(
+                $usuario
+            );
+
+            DB::table('usuarios')
+                ->where('id', $usuario)
+                ->update([
+                    'estado' => $nuevoEstado,
+                    'updated_at' => now(),
+                ]);
+
+            $nuevos = $this->obtenerValoresAuditoriaUsuario(
+                $usuario
+            );
+
+            $accion = $nuevoEstado === 'ACTIVO'
+                ? 'ACTIVAR_USUARIO'
+                : 'DESACTIVAR_USUARIO';
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $auth,
+                modulo: 'Usuarios',
+                accion: $accion,
+                tablaAfectada: 'usuarios',
+                registroId: $usuario,
+                descripcion:
+                    'Se '
+                    . ($nuevoEstado === 'ACTIVO'
+                        ? 'activó'
+                        : 'desactivó')
+                    . ' la cuenta '
+                    . ($nuevos['usuario'] ?? ('#' . $usuario))
+                    . '.',
+                valoresAnteriores: $anteriores,
+                valoresNuevos: $nuevos
+            );
+        });
 
         return back()->with(
             'success',
@@ -487,19 +569,95 @@ class UsuarioController extends Controller
             ],
         ]);
 
-        DB::table('usuarios')
-            ->where('id', $usuario)
-            ->update([
-                'password' => Hash::make(
-                    $validated['password']
-                ),
-                'updated_at' => now(),
-            ]);
+        DB::transaction(function () use (
+            $usuario,
+            $validated,
+            $auth
+        ): void {
+            $registroObjetivo = DB::table('usuarios')
+                ->where('id', $usuario)
+                ->first([
+                    'id',
+                    'usuario',
+                ]);
+
+            DB::table('usuarios')
+                ->where('id', $usuario)
+                ->update([
+                    'password' => Hash::make(
+                        $validated['password']
+                    ),
+                    'updated_at' => now(),
+                ]);
+
+            app(AuditoriaService::class)->registrar(
+                usuario: $auth,
+                modulo: 'Usuarios',
+                accion: 'RESTABLECER_PASSWORD',
+                tablaAfectada: 'usuarios',
+                registroId: $usuario,
+                descripcion:
+                    'El Administrador restableció la contraseña '
+                    . 'de la cuenta '
+                    . ($registroObjetivo->usuario ?? ('#' . $usuario))
+                    . '.',
+                valoresAnteriores: null,
+                valoresNuevos: [
+                    'password_restablecida' => true,
+                ]
+            );
+        });
 
         return back()->with(
             'success',
             'Contraseña actualizada correctamente.'
         );
+    }
+
+    private function obtenerValoresAuditoriaUsuario(
+        int $usuarioId
+    ): array {
+        $registro = DB::table('usuarios as u')
+            ->join(
+                'roles as rol',
+                'rol.id',
+                '=',
+                'u.rol_id'
+            )
+            ->leftJoin(
+                'datos_personales as dp',
+                'dp.usuario_id',
+                '=',
+                'u.id'
+            )
+            ->where('u.id', $usuarioId)
+            ->select([
+                'u.id',
+                'u.usuario',
+                'u.rol_id',
+                'rol.nombre as rol',
+                'u.estado',
+                'u.requiere_cambio_password',
+                'dp.nombres',
+                'dp.apellidos',
+            ])
+            ->first();
+
+        if (! $registro) {
+            return [];
+        }
+
+        return [
+            'id' => (int) $registro->id,
+            'usuario' => $registro->usuario,
+            'rol_id' => (int) $registro->rol_id,
+            'rol' => $registro->rol,
+            'estado' => $registro->estado,
+            'requiere_cambio_password' =>
+                (bool) $registro->requiere_cambio_password,
+            'nombres' => $registro->nombres,
+            'apellidos' => $registro->apellidos,
+        ];
     }
 
     private function validarAdministrador(

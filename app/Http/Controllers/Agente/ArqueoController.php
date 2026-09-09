@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Arqueo;
 use App\Models\ArqueoDetalle;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -761,7 +762,7 @@ class ArqueoController extends Controller
                     $claveFirma
                 );
 
-                FirmaArqueo::create([
+                $firmaArqueo = FirmaArqueo::create([
                     'arqueo_id' => $arqueo->id,
                     'usuario_id' => $usuario->id,
                     'tipo_firma' => 'REALIZADOR',
@@ -778,6 +779,77 @@ class ArqueoController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
+                | AUDITORÍA AUTOMÁTICA
+                |--------------------------------------------------------------------------
+                */
+                $auditoria = app(AuditoriaService::class);
+
+                $auditoria->registrar(
+                    usuario: $usuario,
+                    modulo: 'Arqueos Agente',
+                    accion: 'CREAR_ARQUEO',
+                    tablaAfectada: 'arqueos',
+                    registroId: $arqueo->id,
+                    descripcion: 'El Agente creó el arqueo ' . $arqueo->numero_arqueo
+                        . ($esExtemporaneo ? ' correspondiente a una fecha habilitada de forma extemporánea.' : '.'),
+                    valoresAnteriores: null,
+                    valoresNuevos: [
+                        'id' => (int) $arqueo->id,
+                        'numero_arqueo' => $arqueo->numero_arqueo,
+                        'agente_id' => (int) $arqueo->agente_id,
+                        'creado_por' => (int) $arqueo->creado_por,
+                        'tipo' => $arqueo->tipo,
+                        'estado' => $arqueo->estado,
+                        'fecha_arqueo' => $arqueo->fecha_arqueo->format('Y-m-d'),
+                        'hora_inicio' => $arqueo->hora_inicio?->format('Y-m-d H:i:s'),
+                        'hora_fin' => $arqueo->hora_fin?->format('Y-m-d H:i:s'),
+                        'fuera_fecha_ordinaria' => (bool) $arqueo->fuera_fecha_ordinaria,
+                        'habilitacion_id' => $habilitacionId,
+                        'codigo_agente_historico' => $arqueo->codigo_agente_historico,
+                        'nombre_negocio_historico' => $arqueo->nombre_negocio_historico,
+                        'nombre_propietario_historico' => $arqueo->nombre_propietario_historico,
+                        'direccion_historica' => $arqueo->direccion_historica,
+                        'ruta_historica' => $arqueo->ruta_historica,
+                        'region_historica' => $arqueo->region_historica,
+                        'total_billetes' => (float) $arqueo->total_billetes,
+                        'total_monedas' => (float) $arqueo->total_monedas,
+                        'total_arqueado' => (float) $arqueo->total_arqueado,
+                        'saldo_sistema' => (float) $arqueo->saldo_sistema,
+                        'diferencia' => (float) $arqueo->diferencia,
+                        'certificacion' => $arqueo->certificacion,
+                        'observaciones' => $arqueo->observaciones,
+                        'detalle' => $detalleParaHash,
+                    ]
+                );
+
+                $auditoria->registrar(
+                    usuario: $usuario,
+                    modulo: 'Firmas Arqueos',
+                    accion: 'FIRMAR_ARQUEO',
+                    tablaAfectada: 'firmas_arqueos',
+                    registroId: $firmaArqueo->id,
+                    descripcion: 'El Agente registró su firma electrónica como REALIZADOR del arqueo '
+                        . $arqueo->numero_arqueo . '.',
+                    valoresAnteriores: null,
+                    valoresNuevos: [
+                        'id' => (int) $firmaArqueo->id,
+                        'arqueo_id' => (int) $firmaArqueo->arqueo_id,
+                        'usuario_id' => (int) $firmaArqueo->usuario_id,
+                        'tipo_firma' => $firmaArqueo->tipo_firma,
+                        'rol_firmante' => $firmaArqueo->rol_firmante,
+                        'nombres_historicos' => $firmaArqueo->nombres_historicos,
+                        'apellidos_historicos' => $firmaArqueo->apellidos_historicos,
+                        'hash_documento' => $firmaArqueo->hash_documento,
+                        'firma_electronica' => $firmaArqueo->firma_electronica,
+                        'algoritmo' => $firmaArqueo->algoritmo,
+                        'version_firma' => (int) $firmaArqueo->version_firma,
+                        'fecha_firma' => (string) $firmaArqueo->fecha_firma,
+                        'valida' => (bool) $firmaArqueo->valida,
+                    ]
+                );
+
+                /*
+                |--------------------------------------------------------------------------
                 | CONSUMIR HABILITACIÓN
                 |--------------------------------------------------------------------------
                 |
@@ -786,7 +858,16 @@ class ArqueoController extends Controller
                 |
                 */
                 if ($esExtemporaneo) {
-                    DB::table(
+                    $habilitacionAnterior = DB::table(
+                        'habilitaciones_arqueos_atrasados'
+                    )
+                        ->where('id', $habilitacionId)
+                        ->where('agente_id', $agente->id)
+                        ->first();
+
+                    $utilizadoAt = now();
+
+                    $actualizados = DB::table(
                         'habilitaciones_arqueos_atrasados'
                     )
                         ->where('id', $habilitacionId)
@@ -794,8 +875,38 @@ class ArqueoController extends Controller
                         ->where('estado', 'PENDIENTE')
                         ->update([
                             'estado' => 'UTILIZADA',
-                            'utilizado_at' => now(),
+                            'utilizado_at' => $utilizadoAt,
                         ]);
+
+                    if ($actualizados !== 1) {
+                        throw ValidationException::withMessages([
+                            'habilitacion' => 'La habilitación ya no se encuentra disponible.',
+                        ]);
+                    }
+
+                    $habilitacionNueva = DB::table(
+                        'habilitaciones_arqueos_atrasados'
+                    )
+                        ->where('id', $habilitacionId)
+                        ->first();
+
+                    $auditoria->registrar(
+                        usuario: $usuario,
+                        modulo: 'Arqueos Extemporáneos',
+                        accion: 'UTILIZAR_HABILITACION_ARQUEO_ATRASADO',
+                        tablaAfectada: 'habilitaciones_arqueos_atrasados',
+                        registroId: $habilitacionId,
+                        descripcion: 'La habilitación de arqueo atrasado #'
+                            . $habilitacionId
+                            . ' fue utilizada para registrar el arqueo '
+                            . $arqueo->numero_arqueo . '.',
+                        valoresAnteriores: $habilitacionAnterior
+                            ? (array) $habilitacionAnterior
+                            : null,
+                        valoresNuevos: $habilitacionNueva
+                            ? (array) $habilitacionNueva
+                            : null
+                    );
                 }
             });
         } catch (ValidationException $exception) {
