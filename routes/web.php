@@ -254,6 +254,11 @@ Route::middleware([
 
         Route::get('/reportes',[ReporteAdministradorController::class,'index'])->name('reportes.index');
 
+        Route::get(
+            '/reportes/imprimir',
+            [\App\Http\Controllers\Administrador\ReporteController::class, 'imprimir']
+        )->name('reportes.imprimir');
+
         Route::get('/perfil',[PerfilAdministradorController::class,'index'])->name('perfil.index');
 
         Route::get(
@@ -984,25 +989,4 @@ Route::middleware([
 
     });
 
-/*
-|--------------------------------------------------------------------------
-| Verificación de GD
-|--------------------------------------------------------------------------
-*/
 
-Route::get('/verificar-gd', function () {
-    return response()->json([
-        'php_version' => PHP_VERSION,
-        'sapi' => PHP_SAPI,
-        'php_ini' => php_ini_loaded_file(),
-        'gd_cargado' => extension_loaded('gd'),
-        'imagecreatetruecolor' => function_exists(
-            'imagecreatetruecolor'
-        ),
-        'imagecreatefrompng' => function_exists(
-            'imagecreatefrompng'
-        ),
-        'imagepng' => function_exists('imagepng'),
-        'disable_functions' => ini_get('disable_functions'),
-    ]);
-});
