@@ -958,6 +958,8 @@
         const detailUrl =
             @json(route('gerencia.estado-arqueos.detalle'));
 
+        let lastFocusedElement = null;
+
         const filtros = {
             region_id: @json($regionId ?: null),
             ruta_id: @json($rutaId ?: null),
@@ -975,15 +977,40 @@
         }
 
         function openModal() {
+            lastFocusedElement = document.activeElement;
+
             modal.classList.add('open');
             modal.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
+
+            requestAnimationFrame(() => {
+                modalClose?.focus();
+            });
         }
 
         function closeModal() {
+            if (!modal.classList.contains('open')) {
+                return;
+            }
+
+            if (
+                lastFocusedElement
+                && document.contains(lastFocusedElement)
+                && typeof lastFocusedElement.focus === 'function'
+            ) {
+                lastFocusedElement.focus();
+            } else if (
+                document.activeElement
+                && modal.contains(document.activeElement)
+            ) {
+                document.activeElement.blur();
+            }
+
             modal.classList.remove('open');
             modal.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = '';
+
+            lastFocusedElement = null;
         }
 
         function buildActionButtons(agente) {
