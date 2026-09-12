@@ -8,6 +8,7 @@ use App\Http\Controllers\Agente\ArqueoPromotorController;
 use App\Http\Controllers\Agente\DashboardController as DashboardAgenteController;
 use App\Http\Controllers\Agente\ArqueoExtemporaneoController;
 use App\Http\Controllers\Agente\PerfilController as PerfilAgenteController;
+use App\Http\Controllers\Agente\CumplimientoArqueoController;
 
 use App\Http\Controllers\Promotor\ArqueoAgenteController;
 use App\Http\Controllers\Promotor\ArqueoController as PromotorArqueoController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Promotor\RutasAsignadasController;
 use App\Http\Controllers\Promotor\ReporteController;
 use App\Http\Controllers\Promotor\PerfilController as PerfilPromotorController;
 use App\Http\Controllers\Promotor\HabilitacionArqueoAtrasadoController;
+use App\Http\Controllers\Promotor\CumplimientoArqueoController as CumplimientoPromotorController;
 
 use App\Http\Controllers\Jefe\DashboardController as DashboardJefeController;
 use App\Http\Controllers\Jefe\EstadoArqueosController;
@@ -70,6 +72,7 @@ use App\Http\Controllers\Auditoria\DashboardController as DashboardAuditoriaCont
 use App\Http\Controllers\Auditoria\ArqueoController as ArqueoAuditoriaController;
 use App\Http\Controllers\Auditoria\ReporteController as ReporteAuditoriaController;
 use App\Http\Controllers\Auditoria\PerfilController as PerfilAuditoriaController;
+use App\Http\Controllers\Auditoria\CumplimientoArqueoController as CumplimientoAuditoriaController;
 
 
 use Illuminate\Support\Facades\Auth;
@@ -402,6 +405,11 @@ Route::middleware([
             [ArqueoAgenteController::class, 'anular']
         )->name('arqueos-agentes.anular');
 
+        Route::get(
+            '/cumplimientos',
+            [CumplimientoPromotorController::class, 'index']
+        )->name('cumplimientos.index');
+
 
         Route::get(
             '/habilitaciones-atrasadas',
@@ -469,6 +477,11 @@ Route::middleware([
             '/estado-arqueos',
             [EstadoArqueosController::class, 'index']
         )->name('estado-arqueos.index');
+
+        Route::get(
+            '/estado-arqueos/detalle',
+            [EstadoArqueosController::class, 'detalle']
+        )->name('estado-arqueos.detalle');
 
         Route::get(
             '/agentes',
@@ -752,7 +765,15 @@ Route::middleware([
             [ReporteAuditoriaController::class, 'imprimir']
         )->name('reportes.imprimir');
 
+        Route::get(
+            '/cumplimientos',
+            [CumplimientoAuditoriaController::class, 'index']
+        )->name('cumplimientos.index');
 
+        Route::get(
+            '/cumplimientos/detalle',
+            [CumplimientoAuditoriaController::class, 'detalle']
+        )->name('cumplimientos.detalle');
 
 
 
@@ -784,6 +805,11 @@ Route::middleware([
                 '/estado-arqueos',
                 [EstadoArqueosGerenciaController::class, 'index']
             )->name('estado-arqueos.index');
+
+            Route::get(
+                '/estado-arqueos/detalle',
+                [EstadoArqueosGerenciaController::class, 'detalle']
+            )->name('estado-arqueos.detalle');
 
             Route::get(
                 '/agentes',
@@ -974,6 +1000,11 @@ Route::middleware([
         )->name('arqueos-extemporaneos.index');
 
         Route::get(
+            '/cumplimientos',
+            [CumplimientoArqueoController::class, 'index']
+        )->name('cumplimientos.index');
+
+        Route::get(
             '/perfil',
             [PerfilAgenteController::class, 'index']
         )->name('perfil.index');
@@ -988,5 +1019,4 @@ Route::middleware([
 
 
     });
-
 

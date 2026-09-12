@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Gerencia;
+namespace App\Http\Controllers\Auditoria;
 
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
-class EstadoArqueosController extends Controller
+class CumplimientoArqueoController extends Controller
 {
     private const ESTADOS_ARQUEO_FINALIZADO = [
         'PENDIENTE_CERTIFICACION',
@@ -23,7 +23,7 @@ class EstadoArqueosController extends Controller
         /** @var Usuario $usuario */
         $usuario = $request->user();
 
-        $this->validarGerencia($usuario);
+        $this->autorizar($usuario);
 
         $mes = $this->resolverMes($request);
 
@@ -61,12 +61,7 @@ class EstadoArqueosController extends Controller
             ]);
 
         $promotores = DB::table('usuarios as u')
-            ->join(
-                'roles as rol',
-                'rol.id',
-                '=',
-                'u.rol_id'
-            )
+            ->join('roles as rol', 'rol.id', '=', 'u.rol_id')
             ->leftJoin(
                 'datos_personales as dp',
                 'dp.usuario_id',
@@ -93,18 +88,86 @@ class EstadoArqueosController extends Controller
             $buscar
         );
 
+        $visitasAuditoria = DB::table('arqueos as arq')
+            ->where('arq.tipo', 'VISITA_AUDITORIA')
+            ->where('arq.creado_por', $usuario->id)
+            ->whereBetween('arq.fecha_arqueo', [
+                $inicioMes->toDateString(),
+                $finMes->toDateString(),
+            ])
+            ->when(
+                $buscar !== '',
+                function ($query) use ($buscar): void {
+                    $query->where(function ($subquery) use ($buscar): void {
+                        $subquery
+                            ->where(
+                                'arq.numero_arqueo',
+                                'like',
+                                '%' . $buscar . '%'
+                            )
+                            ->orWhere(
+                                'arq.codigo_agente_historico',
+                                'like',
+                                '%' . $buscar . '%'
+                            )
+                            ->orWhere(
+                                'arq.nombre_negocio_historico',
+                                'like',
+                                '%' . $buscar . '%'
+                            )
+                            ->orWhere(
+                                'arq.nombre_propietario_historico',
+                                'like',
+                                '%' . $buscar . '%'
+                            )
+                            ->orWhere(
+                                'arq.ruta_historica',
+                                'like',
+                                '%' . $buscar . '%'
+                            )
+                            ->orWhere(
+                                'arq.region_historica',
+                                'like',
+                                '%' . $buscar . '%'
+                            );
+                    });
+                }
+            )
+            ->select([
+                'arq.id',
+                'arq.numero_arqueo',
+                'arq.fecha_arqueo',
+                'arq.estado',
+                'arq.codigo_agente_historico',
+                'arq.nombre_negocio_historico',
+                'arq.nombre_propietario_historico',
+                'arq.ruta_historica',
+                'arq.region_historica',
+                'arq.total_arqueado',
+                'arq.saldo_sistema',
+                'arq.diferencia',
+            ])
+            ->orderByDesc('arq.fecha_arqueo')
+            ->orderByDesc('arq.id')
+            ->paginate(
+                10,
+                ['*'],
+                'visitas_page'
+            )
+            ->withQueryString();
+
+        $totalVisitasMes = DB::table('arqueos')
+            ->where('tipo', 'VISITA_AUDITORIA')
+            ->where('creado_por', $usuario->id)
+            ->whereBetween('fecha_arqueo', [
+                $inicioMes->toDateString(),
+                $finMes->toDateString(),
+            ])
+            ->count();
+
         return view(
-            'gerencia.estado-arqueos.index',
+            'auditoria.cumplimientos.index',
             [
-                'regiones' => $regiones,
-                'rutas' => $rutas,
-                'promotores' => $promotores,
-
-                'regionId' => $regionId,
-                'rutaId' => $rutaId,
-                'promotorId' => $promotorId,
-                'buscar' => $buscar,
-
                 'mes' => $mes->format('Y-m'),
                 'mesActual' => today()->format('Y-m'),
                 'mesAnterior' => $mes
@@ -115,12 +178,23 @@ class EstadoArqueosController extends Controller
                     ->copy()
                     ->addMonthNoOverflow()
                     ->format('Y-m'),
-
                 'inicioMes' => $inicioMes,
                 'finMes' => $finMes,
 
+                'regionId' => $regionId,
+                'rutaId' => $rutaId,
+                'promotorId' => $promotorId,
+                'buscar' => $buscar,
+
+                'regiones' => $regiones,
+                'rutas' => $rutas,
+                'promotores' => $promotores,
+
                 'calendario' => $datosCalendario['dias'],
                 'resumenMes' => $datosCalendario['resumen'],
+
+                'visitasAuditoria' => $visitasAuditoria,
+                'totalVisitasMes' => $totalVisitasMes,
             ]
         );
     }
@@ -130,7 +204,7 @@ class EstadoArqueosController extends Controller
         /** @var Usuario $usuario */
         $usuario = $request->user();
 
-        $this->validarGerencia($usuario);
+        $this->autorizar($usuario);
 
         $validated = $request->validate([
             'fecha' => [
@@ -181,11 +255,12 @@ class EstadoArqueosController extends Controller
                 'fecha' => $fecha->toDateString(),
                 'fecha_formateada' => $fecha
                     ->locale('es')
-                    ->translatedFormat('d \d\e F \d\e Y'),
+                    ->translatedFormat(
+                        'd \d\e F \d\e Y'
+                    ),
                 'categoria' => $categoria,
-                'categoria_texto' => $this->textoCategoria(
-                    $categoria
-                ),
+                'categoria_texto' =>
+                    $this->textoCategoria($categoria),
                 'total' => 0,
                 'agentes' => [],
             ]);
@@ -219,7 +294,10 @@ class EstadoArqueosController extends Controller
                 $datos['controles']
             );
 
-            if ($clasificacion['categoria'] !== $categoria) {
+            if (
+                $clasificacion['categoria']
+                !== $categoria
+            ) {
                 continue;
             }
 
@@ -233,30 +311,28 @@ class EstadoArqueosController extends Controller
 
             $agentesDetalle[] = [
                 'id' => (int) $agente->id,
-                'codigo_agente' => $agente->codigo_agente,
-                'nombre_negocio' => $agente->nombre_negocio,
-                'nombre_propietario' => $agente->nombre_propietario,
-                'region' => $agente->region_nombre,
+                'codigo_agente' =>
+                    $agente->codigo_agente,
+                'nombre_negocio' =>
+                    $agente->nombre_negocio,
+                'nombre_propietario' =>
+                    $agente->nombre_propietario,
+                'region' =>
+                    $agente->region_nombre,
                 'ruta' => trim(
                     $agente->ruta_codigo
                     . ' — '
                     . $agente->ruta_nombre
                 ),
-                'promotor' => $this->nombrePromotor(
-                    $asignacion
-                ),
-                'numero_arqueo' => $arqueo?->numero_arqueo,
-                'arqueo_id' => $arqueo?->id,
-                'url_arqueo' => $arqueo
-                    ? url(
-                        '/gerencia/arqueos/'
-                        . $arqueo->id
-                    )
-                    : null,
-                'url_agente' => url(
-                    '/gerencia/agentes/'
-                    . $agente->id
-                ),
+                'promotor' =>
+                    $this->nombrePromotor($asignacion),
+                'categoria' => $categoria,
+                'estado_texto' =>
+                    $this->textoCategoria($categoria),
+                'numero_arqueo' =>
+                    $arqueo?->numero_arqueo,
+                'arqueo_id' =>
+                    $arqueo?->id,
             ];
         }
 
@@ -277,33 +353,43 @@ class EstadoArqueosController extends Controller
             'fecha' => $fecha->toDateString(),
             'fecha_formateada' => $fecha
                 ->locale('es')
-                ->translatedFormat('d \d\e F \d\e Y'),
+                ->translatedFormat(
+                    'd \d\e F \d\e Y'
+                ),
             'categoria' => $categoria,
-            'categoria_texto' => $this->textoCategoria(
-                $categoria
-            ),
+            'categoria_texto' =>
+                $this->textoCategoria($categoria),
             'total' => count($agentesDetalle),
             'agentes' => $agentesDetalle,
         ]);
     }
 
+    private function autorizar(Usuario $usuario): void
+    {
+        $usuario->loadMissing('rol');
+
+        abort_if(
+            ! $usuario->rol
+            || $usuario->rol->nombre !== 'Auditoria',
+            403,
+            'No tiene autorización para acceder a esta sección.'
+        );
+    }
+
     private function resolverMes(Request $request): Carbon
     {
-        $mesSolicitado = trim(
+        $mes = trim(
             (string) $request->string('mes')
         );
 
         if (
-            $mesSolicitado !== ''
-            && preg_match(
-                '/^\d{4}-\d{2}$/',
-                $mesSolicitado
-            ) === 1
+            $mes !== ''
+            && preg_match('/^\d{4}-\d{2}$/', $mes) === 1
         ) {
             try {
                 return Carbon::createFromFormat(
                     'Y-m',
-                    $mesSolicitado
+                    $mes
                 )->startOfMonth();
             } catch (\Throwable) {
                 // Se utiliza el mes actual.
@@ -385,17 +471,28 @@ class EstadoArqueosController extends Controller
             }
 
             $dias[$fecha->toDateString()] = [
-                'fecha' => $fecha->toDateString(),
-                'dia' => $fecha->day,
-                'dia_semana' => $fecha->dayOfWeekIso,
-                'es_hoy' => $fecha->isSameDay($hoy),
-                'es_futuro' => $esFuturo,
-                'total_agentes' => $conteos['total'],
-                'arqueados' => $conteos['ARQUEADO'],
-                'sin_arqueo' => $conteos['SIN_ARQUEO'],
-                'no_atendieron' => $conteos['NO_ATENDIO'],
-                'extemporaneos' => $conteos['EXTEMPORANEO'],
-                'anulados' => $conteos['ANULADO'],
+                'fecha' =>
+                    $fecha->toDateString(),
+                'dia' =>
+                    $fecha->day,
+                'dia_semana' =>
+                    $fecha->dayOfWeekIso,
+                'es_hoy' =>
+                    $fecha->isSameDay($hoy),
+                'es_futuro' =>
+                    $esFuturo,
+                'total_agentes' =>
+                    $conteos['total'],
+                'arqueados' =>
+                    $conteos['ARQUEADO'],
+                'sin_arqueo' =>
+                    $conteos['SIN_ARQUEO'],
+                'no_atendieron' =>
+                    $conteos['NO_ATENDIO'],
+                'extemporaneos' =>
+                    $conteos['EXTEMPORANEO'],
+                'anulados' =>
+                    $conteos['ANULADO'],
             ];
 
             if (! $esFuturo) {
@@ -482,16 +579,6 @@ class EstadoArqueosController extends Controller
                                 )
                                 ->orWhere(
                                     'a.nombre_propietario',
-                                    'like',
-                                    '%' . $buscar . '%'
-                                )
-                                ->orWhere(
-                                    'r.nombre',
-                                    'like',
-                                    '%' . $buscar . '%'
-                                )
-                                ->orWhere(
-                                    'reg.nombre',
                                     'like',
                                     '%' . $buscar . '%'
                                 );
@@ -587,7 +674,8 @@ class EstadoArqueosController extends Controller
                 'dp.apellidos as promotor_apellidos',
             ])
             ->groupBy(
-                fn ($item) => (int) $item->ruta_id
+                fn ($item) =>
+                    (int) $item->ruta_id
             );
 
         $arqueos = DB::table('arqueos')
@@ -827,18 +915,5 @@ class EstadoArqueosController extends Controller
             default =>
                 'Cumplimiento de arqueos',
         };
-    }
-
-    private function validarGerencia(
-        Usuario $usuario
-    ): void {
-        $usuario->loadMissing('rol');
-
-        abort_if(
-            ! $usuario->rol
-            || $usuario->rol->nombre !== 'Gerencia',
-            403,
-            'No tiene autorización para acceder a esta sección.'
-        );
     }
 }

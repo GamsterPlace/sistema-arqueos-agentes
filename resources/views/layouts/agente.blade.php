@@ -1,5 +1,7 @@
+```blade
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
 
@@ -8,7 +10,10 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta
+        name="csrf-token"
+        content="{{ csrf_token() }}"
+    >
 
     <title>
         @yield('title', 'Panel del Agente')
@@ -25,12 +30,10 @@
             --azul-profundo: #06284f;
             --verde-principal: #00a651;
             --verde-oscuro: #008640;
-
             --blanco: #ffffff;
             --fondo: #f3f6f9;
             --fondo-suave: #f8fafc;
             --borde: #dfe7ee;
-
             --texto: #19344d;
             --texto-secundario: #6d7d8a;
             --texto-claro: #8c9aa5;
@@ -54,6 +57,7 @@
             overflow-x: hidden;
             background: var(--fondo);
             color: var(--texto);
+
             font-family:
                 Inter,
                 ui-sans-serif,
@@ -91,11 +95,15 @@
             z-index: 50;
             top: 0;
             left: 0;
+
             width: var(--sidebar-width);
             height: 100vh;
+
             display: flex;
             flex-direction: column;
+
             overflow-y: auto;
+
             background:
                 linear-gradient(
                     165deg,
@@ -103,9 +111,12 @@
                     var(--azul-principal) 62%,
                     #0e5f79
                 );
+
             color: var(--blanco);
+
             box-shadow:
                 10px 0 30px rgba(4, 36, 70, 0.13);
+
             transition: transform 0.25s ease;
         }
 
@@ -118,47 +129,66 @@
 
         .sidebar-decoration::before {
             content: "";
+
             position: absolute;
+
             width: 280px;
             height: 280px;
+
             top: -170px;
             right: -150px;
+
             border: 52px solid rgba(255, 255, 255, 0.04);
             border-radius: 50%;
         }
 
         .sidebar-decoration::after {
             content: "";
+
             position: absolute;
+
             width: 230px;
             height: 230px;
+
             bottom: -150px;
             left: -110px;
+
             border-radius: 50%;
+
             background: rgba(255, 255, 255, 0.035);
         }
 
         .sidebar-header {
             position: relative;
             z-index: 2;
+
             padding: 24px 22px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+
+            border-bottom:
+                1px solid rgba(255, 255, 255, 0.10);
         }
 
         .sidebar-logo-box {
             display: flex;
             justify-content: center;
+
             padding: 10px 13px;
+
             border-radius: 15px;
+
             background: rgba(255, 255, 255, 0.97);
-            box-shadow: 0 12px 26px rgba(0, 0, 0, 0.14);
+
+            box-shadow:
+                0 12px 26px rgba(0, 0, 0, 0.14);
         }
 
         .sidebar-logo {
             display: block;
+
             width: 100%;
             max-width: 190px;
             height: 62px;
+
             object-fit: contain;
         }
 
@@ -169,6 +199,7 @@
 
         .sidebar-system-name strong {
             display: block;
+
             font-size: 14px;
             line-height: 1.4;
             letter-spacing: 0.1px;
@@ -176,8 +207,11 @@
 
         .sidebar-system-name span {
             display: block;
+
             margin-top: 5px;
+
             color: rgba(255, 255, 255, 0.60);
+
             font-size: 11px;
             letter-spacing: 0.7px;
             text-transform: uppercase;
@@ -186,24 +220,37 @@
         .sidebar-user {
             position: relative;
             z-index: 2;
+
             display: flex;
             align-items: center;
             gap: 12px;
+
             margin: 19px 16px 4px;
             padding: 13px;
-            border: 1px solid rgba(255, 255, 255, 0.11);
+
+            border:
+                1px solid rgba(255, 255, 255, 0.11);
+
             border-radius: 15px;
-            background: rgba(255, 255, 255, 0.08);
+
+            background:
+                rgba(255, 255, 255, 0.08);
         }
 
         .sidebar-user-avatar {
             flex: 0 0 auto;
+
             width: 43px;
             height: 43px;
+
             display: grid;
             place-items: center;
+
             border-radius: 13px;
-            background: rgba(255, 255, 255, 0.14);
+
+            background:
+                rgba(255, 255, 255, 0.14);
+
             color: #7be4aa;
         }
 
@@ -218,19 +265,28 @@
 
         .sidebar-user-info strong {
             display: block;
+
             overflow: hidden;
+
             color: var(--blanco);
+
             font-size: 13px;
+
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
         .sidebar-user-info span {
             display: block;
+
             margin-top: 4px;
-            color: rgba(255, 255, 255, 0.57);
+
+            color:
+                rgba(255, 255, 255, 0.57);
+
             font-size: 10px;
             font-weight: 700;
+
             letter-spacing: 0.7px;
             text-transform: uppercase;
         }
@@ -238,15 +294,21 @@
         .sidebar-navigation {
             position: relative;
             z-index: 2;
+
             flex: 1;
+
             padding: 18px 14px 22px;
         }
 
         .navigation-label {
             margin: 0 11px 10px;
-            color: rgba(255, 255, 255, 0.43);
+
+            color:
+                rgba(255, 255, 255, 0.43);
+
             font-size: 10px;
             font-weight: 800;
+
             letter-spacing: 1px;
             text-transform: uppercase;
         }
@@ -258,16 +320,25 @@
 
         .navigation-link {
             position: relative;
+
             display: flex;
             align-items: center;
             gap: 13px;
+
             min-height: 51px;
+
             padding: 11px 14px;
+
             overflow: hidden;
+
             border-radius: 13px;
-            color: rgba(255, 255, 255, 0.73);
+
+            color:
+                rgba(255, 255, 255, 0.73);
+
             font-size: 13px;
             font-weight: 680;
+
             transition:
                 color 0.2s ease,
                 background 0.2s ease,
@@ -276,7 +347,10 @@
 
         .navigation-link:hover {
             transform: translateX(3px);
-            background: rgba(255, 255, 255, 0.09);
+
+            background:
+                rgba(255, 255, 255, 0.09);
+
             color: var(--blanco);
         }
 
@@ -287,34 +361,50 @@
                     rgba(255, 255, 255, 0.18),
                     rgba(255, 255, 255, 0.10)
                 );
+
             color: var(--blanco);
+
             box-shadow:
-                inset 0 0 0 1px rgba(255, 255, 255, 0.10);
+                inset 0 0 0 1px
+                rgba(255, 255, 255, 0.10);
         }
 
         .navigation-link.active::before {
             content: "";
+
             position: absolute;
+
             top: 10px;
             bottom: 10px;
             left: 0;
+
             width: 4px;
-            border-radius: 0 5px 5px 0;
+
+            border-radius:
+                0 5px 5px 0;
+
             background: #70df9f;
         }
 
         .navigation-icon {
             flex: 0 0 auto;
+
             width: 34px;
             height: 34px;
+
             display: grid;
             place-items: center;
+
             border-radius: 10px;
-            background: rgba(255, 255, 255, 0.08);
+
+            background:
+                rgba(255, 255, 255, 0.08);
         }
 
         .navigation-link.active .navigation-icon {
-            background: rgba(112, 223, 159, 0.16);
+            background:
+                rgba(112, 223, 159, 0.16);
+
             color: #7be4aa;
         }
 
@@ -326,31 +416,47 @@
         .sidebar-footer {
             position: relative;
             z-index: 2;
+
             padding: 17px 18px 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.09);
+
+            border-top:
+                1px solid rgba(255, 255, 255, 0.09);
         }
 
         .logout-button {
             width: 100%;
             min-height: 45px;
+
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 9px;
-            border: 1px solid rgba(255, 255, 255, 0.13);
+
+            border:
+                1px solid rgba(255, 255, 255, 0.13);
+
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.07);
-            color: rgba(255, 255, 255, 0.78);
+
+            background:
+                rgba(255, 255, 255, 0.07);
+
+            color:
+                rgba(255, 255, 255, 0.78);
+
             font-size: 12px;
             font-weight: 750;
+
             cursor: pointer;
+
             transition:
                 background 0.2s ease,
                 color 0.2s ease;
         }
 
         .logout-button:hover {
-            background: rgba(255, 255, 255, 0.14);
+            background:
+                rgba(255, 255, 255, 0.14);
+
             color: var(--blanco);
         }
 
@@ -367,42 +473,68 @@
 
         .main-area {
             min-height: 100vh;
-            margin-left: var(--sidebar-width);
-            transition: margin-left 0.25s ease;
+
+            margin-left:
+                var(--sidebar-width);
+
+            transition:
+                margin-left 0.25s ease;
         }
 
         .topbar {
             position: sticky;
             z-index: 30;
             top: 0;
+
             height: var(--header-height);
+
             display: flex;
             align-items: center;
             justify-content: space-between;
+
             gap: 22px;
+
             padding: 0 30px;
-            border-bottom: 1px solid rgba(219, 228, 236, 0.92);
-            background: rgba(255, 255, 255, 0.94);
+
+            border-bottom:
+                1px solid rgba(219, 228, 236, 0.92);
+
+            background:
+                rgba(255, 255, 255, 0.94);
+
             backdrop-filter: blur(16px);
-            box-shadow: 0 3px 13px rgba(22, 58, 85, 0.035);
+
+            box-shadow:
+                0 3px 13px
+                rgba(22, 58, 85, 0.035);
         }
 
         .topbar-left {
             display: flex;
             align-items: center;
             gap: 14px;
+
             min-width: 0;
         }
 
         .mobile-menu-button {
             width: 42px;
             height: 42px;
+
             display: none;
             place-items: center;
-            border: 1px solid var(--borde);
+
+            border:
+                1px solid var(--borde);
+
             border-radius: 12px;
-            background: var(--blanco);
-            color: var(--azul-principal);
+
+            background:
+                var(--blanco);
+
+            color:
+                var(--azul-principal);
+
             cursor: pointer;
         }
 
@@ -417,19 +549,30 @@
 
         .topbar-title h1 {
             margin: 0;
+
             overflow: hidden;
-            color: var(--azul-profundo);
+
+            color:
+                var(--azul-profundo);
+
             font-size: 20px;
+
             letter-spacing: -0.35px;
+
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
         .topbar-title p {
             margin: 4px 0 0;
+
             overflow: hidden;
-            color: var(--texto-secundario);
+
+            color:
+                var(--texto-secundario);
+
             font-size: 11px;
+
             text-overflow: ellipsis;
             white-space: nowrap;
         }
@@ -444,7 +587,10 @@
             display: flex;
             align-items: center;
             gap: 9px;
-            color: var(--texto-secundario);
+
+            color:
+                var(--texto-secundario);
+
             font-size: 12px;
             font-weight: 650;
         }
@@ -452,20 +598,26 @@
         .current-date svg {
             width: 17px;
             height: 17px;
-            color: var(--verde-principal);
+
+            color:
+                var(--verde-principal);
         }
 
         .topbar-logo {
             width: 66px;
             height: 54px;
+
             object-fit: contain;
         }
 
         .content-wrapper {
             width: 100%;
             max-width: 1550px;
+
             margin: 0 auto;
-            padding: 28px 30px 45px;
+
+            padding:
+                28px 30px 45px;
         }
 
         /*
@@ -478,20 +630,29 @@
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
+
             gap: 25px;
+
             margin-bottom: 25px;
         }
 
         .page-title h2 {
             margin: 0;
-            color: var(--azul-profundo);
+
+            color:
+                var(--azul-profundo);
+
             font-size: 28px;
+
             letter-spacing: -0.7px;
         }
 
         .page-title p {
             margin: 8px 0 0;
-            color: var(--texto-secundario);
+
+            color:
+                var(--texto-secundario);
+
             font-size: 14px;
             line-height: 1.55;
         }
@@ -500,11 +661,18 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+
             padding: 9px 13px;
-            border: 1px solid #cfe9d9;
+
+            border:
+                1px solid #cfe9d9;
+
             border-radius: 999px;
+
             background: #effaf3;
+
             color: #197245;
+
             font-size: 11px;
             font-weight: 750;
         }
@@ -512,28 +680,43 @@
         .page-badge-dot {
             width: 7px;
             height: 7px;
+
             border-radius: 50%;
-            background: var(--verde-principal);
-            box-shadow: 0 0 0 4px rgba(0, 166, 81, 0.11);
+
+            background:
+                var(--verde-principal);
+
+            box-shadow:
+                0 0 0 4px
+                rgba(0, 166, 81, 0.11);
         }
 
         .alert-message {
             margin-bottom: 22px;
+
             padding: 14px 16px;
+
             border-radius: 13px;
+
             font-size: 13px;
             line-height: 1.5;
         }
 
         .alert-message.success {
-            border: 1px solid #b9e1c8;
+            border:
+                1px solid #b9e1c8;
+
             background: #effaf3;
+
             color: #176c40;
         }
 
         .alert-message.warning {
-            border: 1px solid #f0d9a4;
+            border:
+                1px solid #f0d9a4;
+
             background: #fff9e9;
+
             color: #8a6511;
         }
 
@@ -541,8 +724,12 @@
             position: fixed;
             z-index: 45;
             inset: 0;
+
             display: none;
-            background: rgba(4, 27, 49, 0.52);
+
+            background:
+                rgba(4, 27, 49, 0.52);
+
             backdrop-filter: blur(2px);
         }
 
@@ -610,14 +797,18 @@
 </head>
 
 <body>
+
     <div class="app-layout">
+
         <aside
             class="sidebar"
             id="sidebar"
         >
+
             <div class="sidebar-decoration"></div>
 
             <header class="sidebar-header">
+
                 <div class="sidebar-logo-box">
                     <img
                         src="{{ asset('images/logos/ecosaba.png') }}"
@@ -635,10 +826,13 @@
                         Agentes MICOOPE
                     </span>
                 </div>
+
             </header>
 
             <div class="sidebar-user">
+
                 <span class="sidebar-user-avatar">
+
                     <svg
                         viewBox="0 0 24 24"
                         fill="none"
@@ -648,11 +842,17 @@
                         stroke-linejoin="round"
                     >
                         <path d="M20 21a8 8 0 0 0-16 0"/>
-                        <circle cx="12" cy="7" r="4"/>
+                        <circle
+                            cx="12"
+                            cy="7"
+                            r="4"
+                        />
                     </svg>
+
                 </span>
 
                 <div class="sidebar-user-info">
+
                     <strong>
                         {{ auth()->user()->nombre_completo }}
                     </strong>
@@ -660,20 +860,27 @@
                     <span>
                         Agente MICOOPE
                     </span>
+
                 </div>
+
             </div>
 
             <nav class="sidebar-navigation">
+
                 <p class="navigation-label">
                     Menú principal
                 </p>
 
                 <div class="navigation-list">
+
+                    {{-- Dashboard --}}
                     <a
                         href="{{ route('agente.dashboard') }}"
                         class="navigation-link {{ request()->routeIs('agente.dashboard') ? 'active' : '' }}"
                     >
+
                         <span class="navigation-icon">
+
                             <svg
                                 viewBox="0 0 24 24"
                                 fill="none"
@@ -682,21 +889,52 @@
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                             >
-                                <rect x="3" y="3" width="7" height="7" rx="1"/>
-                                <rect x="14" y="3" width="7" height="7" rx="1"/>
-                                <rect x="3" y="14" width="7" height="7" rx="1"/>
-                                <rect x="14" y="14" width="7" height="7" rx="1"/>
+                                <rect
+                                    x="3"
+                                    y="3"
+                                    width="7"
+                                    height="7"
+                                    rx="1"
+                                />
+
+                                <rect
+                                    x="14"
+                                    y="3"
+                                    width="7"
+                                    height="7"
+                                    rx="1"
+                                />
+
+                                <rect
+                                    x="3"
+                                    y="14"
+                                    width="7"
+                                    height="7"
+                                    rx="1"
+                                />
+
+                                <rect
+                                    x="14"
+                                    y="14"
+                                    width="7"
+                                    height="7"
+                                    rx="1"
+                                />
                             </svg>
+
                         </span>
 
                         Dashboard
                     </a>
 
+                    {{-- Mis Cumplimientos --}}
                     <a
-                        href="{{ route('agente.arqueos.index') }}"
-                        class="navigation-link {{ request()->routeIs('agente.arqueos.*') ? 'active' : '' }}"
+                        href="{{ route('agente.cumplimientos.index') }}"
+                        class="navigation-link {{ request()->routeIs('agente.cumplimientos.*') ? 'active' : '' }}"
                     >
+
                         <span class="navigation-icon">
+
                             <svg
                                 viewBox="0 0 24 24"
                                 fill="none"
@@ -705,21 +943,67 @@
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                             >
-                                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                                <rect
+                                    x="3"
+                                    y="5"
+                                    width="18"
+                                    height="16"
+                                    rx="2"
+                                />
+
+                                <path d="M16 3v4"/>
+                                <path d="M8 3v4"/>
+                                <path d="M3 10h18"/>
+                                <path d="m9 16 2 2 4-4"/>
+                            </svg>
+
+                        </span>
+
+                        Mis Cumplimientos
+                    </a>
+
+                    {{-- Arqueos del Agente --}}
+                    <a
+                        href="{{ route('agente.arqueos.index') }}"
+                        class="navigation-link {{ request()->routeIs('agente.arqueos.*') ? 'active' : '' }}"
+                    >
+
+                        <span class="navigation-icon">
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.9"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <rect
+                                    x="3"
+                                    y="5"
+                                    width="18"
+                                    height="14"
+                                    rx="2"
+                                />
+
                                 <path d="M7 9h10"/>
                                 <path d="M7 13h5"/>
                                 <path d="M17 13h.01"/>
                             </svg>
+
                         </span>
 
                         Arqueos del Agente
                     </a>
 
+                    {{-- Arqueos del Promotor --}}
                     <a
                         href="{{ route('agente.arqueos-promotor.index') }}"
                         class="navigation-link {{ request()->routeIs('agente.arqueos-promotor.*') ? 'active' : '' }}"
                     >
+
                         <span class="navigation-icon">
+
                             <svg
                                 viewBox="0 0 24 24"
                                 fill="none"
@@ -729,21 +1013,28 @@
                                 stroke-linejoin="round"
                             >
                                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
+                                <circle
+                                    cx="9"
+                                    cy="7"
+                                    r="4"
+                                />
+
                                 <path d="m16 11 2 2 4-4"/>
                             </svg>
+
                         </span>
 
                         Arqueos del Promotor
                     </a>
 
+                    {{-- Arqueos Extemporáneos --}}
                     <a
                         href="{{ route('agente.arqueos-extemporaneos.index') }}"
-                        class="navigation-link {{ request()->routeIs(
-                            'agente.arqueos-extemporaneos.*'
-                        ) ? 'active' : '' }}"
+                        class="navigation-link {{ request()->routeIs('agente.arqueos-extemporaneos.*') ? 'active' : '' }}"
                     >
+
                         <span class="navigation-icon">
+
                             <svg
                                 viewBox="0 0 24 24"
                                 fill="none"
@@ -752,25 +1043,34 @@
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                             >
-                                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                                <rect
+                                    x="3"
+                                    y="5"
+                                    width="18"
+                                    height="16"
+                                    rx="2"
+                                />
+
                                 <path d="M16 3v4"/>
                                 <path d="M8 3v4"/>
                                 <path d="M3 10h18"/>
                                 <path d="M12 14v4"/>
                                 <path d="M10 16h4"/>
                             </svg>
+
                         </span>
 
                         Arqueos Extemporáneos
                     </a>
 
-
-
+                    {{-- Perfil --}}
                     <a
                         href="{{ route('agente.perfil.index') }}"
                         class="navigation-link {{ request()->routeIs('agente.perfil.*') ? 'active' : '' }}"
                     >
+
                         <span class="navigation-icon">
+
                             <svg
                                 viewBox="0 0 24 24"
                                 fill="none"
@@ -779,17 +1079,26 @@
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                             >
-                                <circle cx="12" cy="8" r="4"/>
+                                <circle
+                                    cx="12"
+                                    cy="8"
+                                    r="4"
+                                />
+
                                 <path d="M4 21a8 8 0 0 1 16 0"/>
                             </svg>
+
                         </span>
 
                         Perfil
                     </a>
+
                 </div>
+
             </nav>
 
             <footer class="sidebar-footer">
+
                 <form
                     method="POST"
                     action="{{ route('logout') }}"
@@ -800,6 +1109,7 @@
                         type="submit"
                         class="logout-button"
                     >
+
                         <svg
                             viewBox="0 0 24 24"
                             fill="none"
@@ -814,9 +1124,12 @@
                         </svg>
 
                         Cerrar sesión
+
                     </button>
                 </form>
+
             </footer>
+
         </aside>
 
         <div
@@ -825,14 +1138,18 @@
         ></div>
 
         <main class="main-area">
+
             <header class="topbar">
+
                 <div class="topbar-left">
+
                     <button
                         type="button"
                         class="mobile-menu-button"
                         id="mobileMenuButton"
                         aria-label="Abrir menú"
                     >
+
                         <svg
                             viewBox="0 0 24 24"
                             fill="none"
@@ -844,9 +1161,11 @@
                             <path d="M4 12h16"/>
                             <path d="M4 18h16"/>
                         </svg>
+
                     </button>
 
                     <div class="topbar-title">
+
                         <h1>
                             @yield('module-title', 'Panel del Agente')
                         </h1>
@@ -854,11 +1173,15 @@
                         <p>
                             Sistema de Arqueos para Agentes MICOOPE
                         </p>
+
                     </div>
+
                 </div>
 
                 <div class="topbar-right">
+
                     <div class="current-date">
+
                         <svg
                             viewBox="0 0 24 24"
                             fill="none"
@@ -867,13 +1190,21 @@
                             stroke-linecap="round"
                             stroke-linejoin="round"
                         >
-                            <rect x="3" y="5" width="18" height="16" rx="2"/>
+                            <rect
+                                x="3"
+                                y="5"
+                                width="18"
+                                height="16"
+                                rx="2"
+                            />
+
                             <path d="M16 3v4"/>
                             <path d="M8 3v4"/>
                             <path d="M3 10h18"/>
                         </svg>
 
                         {{ now()->locale('es')->translatedFormat('d \d\e F \d\e Y') }}
+
                     </div>
 
                     <img
@@ -881,10 +1212,13 @@
                         alt="Agentes MICOOPE"
                         class="topbar-logo"
                     >
+
                 </div>
+
             </header>
 
             <div class="content-wrapper">
+
                 @if (session('success'))
                     <div class="alert-message success">
                         {{ session('success') }}
@@ -898,12 +1232,16 @@
                 @endif
 
                 @yield('content')
+
             </div>
+
         </main>
+
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+
             const sidebar =
                 document.getElementById('sidebar');
 
@@ -914,14 +1252,16 @@
                 document.getElementById('mobileMenuButton');
 
             function openSidebar() {
-                sidebar.classList.add('open');
-                overlay.classList.add('visible');
+                sidebar?.classList.add('open');
+                overlay?.classList.add('visible');
+
                 document.body.style.overflow = 'hidden';
             }
 
             function closeSidebar() {
-                sidebar.classList.remove('open');
-                overlay.classList.remove('visible');
+                sidebar?.classList.remove('open');
+                overlay?.classList.remove('visible');
+
                 document.body.style.overflow = '';
             }
 
@@ -935,14 +1275,37 @@
                 closeSidebar
             );
 
-            window.addEventListener('resize', function () {
-                if (window.innerWidth > 1020) {
-                    closeSidebar();
+            window.addEventListener(
+                'resize',
+                function () {
+                    if (window.innerWidth > 1020) {
+                        closeSidebar();
+                    }
                 }
-            });
+            );
+
+            /*
+             * Cerrar el menú móvil al seleccionar una opción.
+             */
+            document
+                .querySelectorAll('.navigation-link')
+                .forEach(function (link) {
+                    link.addEventListener(
+                        'click',
+                        function () {
+                            if (window.innerWidth <= 1020) {
+                                closeSidebar();
+                            }
+                        }
+                    );
+                });
+
         });
     </script>
 
     @stack('scripts')
+
 </body>
+
 </html>
+

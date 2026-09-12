@@ -1,586 +1,1223 @@
 @extends('layouts.gerencia')
 
-@section('title', 'Estado de Arqueos')
-@section('module-title', 'Estado de Arqueos')
+@section('title', 'Cumplimiento de Arqueos')
+@section('module-title', 'Cumplimiento de Arqueos')
 
 @push('styles')
 <style>
-    .summary-grid {
-        display:grid;
-        grid-template-columns:repeat(5,minmax(0,1fr));
-        gap:14px;
-        margin-bottom:22px;
+    .compliance-page {
+        display: grid;
+        gap: 20px;
     }
 
-    .summary-card,
+    .compliance-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+    }
+
+    .compliance-title h2 {
+        margin: 0;
+        color: #06284f;
+        font-size: 28px;
+    }
+
+    .compliance-title p {
+        margin: 8px 0 0;
+        max-width: 800px;
+        color: #6d7d8a;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
     .filters-card,
-    .table-card {
-        border:1px solid #e0e8ee;
-        border-radius:18px;
-        background:#fff;
-        box-shadow:0 8px 24px rgba(20,57,83,.05);
-    }
-
+    .calendar-card,
     .summary-card {
-        padding:17px;
-    }
-
-    .summary-card span {
-        display:block;
-        color:#758697;
-        font-size:8px;
-        font-weight:800;
-        text-transform:uppercase;
-    }
-
-    .summary-card strong {
-        display:block;
-        margin-top:8px;
-        color:#082d55;
-        font-size:23px;
-    }
-
-    .summary-card.success {
-        border-color:#c5e5d1;
-        background:#f7fcf9;
-    }
-
-    .summary-card.warning {
-        border-color:#efd99f;
-        background:#fffdf6;
-    }
-
-    .summary-card.info {
-        border-color:#c9dceb;
-        background:#f7fbff;
+        border: 1px solid #e0e8ee;
+        background: #ffffff;
+        box-shadow: 0 8px 24px rgba(20, 57, 83, .05);
     }
 
     .filters-card {
-        padding:18px;
-        margin-bottom:20px;
+        padding: 18px;
+        border-radius: 16px;
     }
 
     .filters-grid {
-        display:grid;
-        grid-template-columns:
-            minmax(220px,1fr)
-            170px
-            210px
-            210px
-            210px
-            180px;
-        gap:10px;
+        display: grid;
+        grid-template-columns: minmax(190px, 1.2fr) 180px 180px 200px;
+        gap: 12px;
     }
 
     .form-control {
-        width:100%;
-        min-height:42px;
-        padding:0 12px;
-        border:1px solid #ced9e1;
-        border-radius:10px;
-        background:#fff;
-        color:#30485b;
-        box-sizing:border-box;
+        width: 100%;
+        min-height: 42px;
+        padding: 0 12px;
+        border: 1px solid #ced9e1;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #30485b;
+        font-size: 11px;
+        outline: none;
+        transition: .2s ease;
+    }
+
+    .form-control:focus {
+        border-color: #8eb0cb;
+        box-shadow: 0 0 0 3px rgba(22, 76, 150, .08);
     }
 
     .filters-actions {
-        display:flex;
-        justify-content:flex-end;
-        gap:10px;
-        margin-top:13px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 13px;
     }
 
     .btn {
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        min-height:40px;
-        padding:0 15px;
-        border:0;
-        border-radius:10px;
-        font-size:10px;
-        font-weight:800;
-        text-decoration:none;
-        cursor:pointer;
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 15px;
+        border: 0;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
     }
 
     .btn-primary {
-        background:#164c96;
-        color:#fff;
+        background: #164c96;
+        color: #ffffff;
     }
 
     .btn-secondary {
-        background:#edf2f5;
-        color:#3d596f;
+        background: #edf2f5;
+        color: #3d596f;
     }
 
-    .table-card {
-        overflow:hidden;
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
     }
 
-    .table-header {
-        padding:18px 20px;
-        border-bottom:1px solid #edf1f4;
-        background:#fafcfd;
+    .summary-card {
+        padding: 16px;
+        border-radius: 14px;
     }
 
-    .table-header h3 {
-        margin:0;
-        color:#0a3158;
-        font-size:15px;
+    .summary-card span {
+        display: block;
+        color: #778895;
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .3px;
     }
 
-    .table-header p {
-        margin:5px 0 0;
-        color:#82909a;
-        font-size:10px;
+    .summary-card strong {
+        display: block;
+        margin-top: 7px;
+        color: #082d55;
+        font-size: 24px;
     }
 
-    .table-responsive {
-        overflow-x:auto;
+    .summary-card.done { border-color: #cce7d6; background: #f8fdf9; }
+    .summary-card.pending { border-color: #efd99f; background: #fffdf6; }
+    .summary-card.no-attention { border-color: #efc5c5; background: #fffafa; }
+    .summary-card.extra { border-color: #d9d0f4; background: #fbf9ff; }
+    .summary-card.cancelled { border-color: #d7dde2; background: #fafbfc; }
+
+    .calendar-card {
+        overflow: hidden;
+        border-radius: 18px;
     }
 
-    table {
-        width:100%;
-        min-width:1250px;
-        border-collapse:collapse;
+    .calendar-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 18px 20px;
+        border-bottom: 1px solid #e9eff3;
+        background: #fbfcfd;
     }
 
-    th,
-    td {
-        padding:12px 13px;
-        border-bottom:1px solid #edf1f4;
-        text-align:left;
-        vertical-align:middle;
-        font-size:10px;
+    .calendar-toolbar h3 {
+        margin: 0;
+        color: #0a3158;
+        font-size: 18px;
+        text-transform: capitalize;
     }
 
-    th {
-        background:#f7f9fb;
-        color:#687b8b;
-        font-size:8px;
-        font-weight:800;
-        text-transform:uppercase;
+    .calendar-toolbar p {
+        margin: 4px 0 0;
+        color: #82909a;
+        font-size: 10px;
     }
 
-    .badge {
-        display:inline-flex;
-        padding:6px 9px;
-        border-radius:999px;
-        font-size:8px;
-        font-weight:800;
-        text-transform:uppercase;
-        white-space:nowrap;
+    .calendar-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    .badge.success {
-        background:#eaf8ef;
-        color:#1d7b4e;
+    .calendar-nav a {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 12px;
+        border: 1px solid #d8e2e9;
+        border-radius: 9px;
+        background: #ffffff;
+        color: #31536e;
+        font-size: 10px;
+        font-weight: 800;
+        transition: .2s ease;
     }
 
-    .badge.warning {
-        background:#fff5dc;
-        color:#9c7014;
+    .calendar-nav a:hover {
+        border-color: #9db6c9;
+        color: #164c96;
+        background: #f5f9fc;
     }
 
-    .badge.info {
-        background:#eaf3fb;
-        color:#285f91;
+    .calendar-scroll {
+        overflow-x: auto;
     }
 
-    .diff-negative {
-        color:#b33a34;
-        font-weight:800;
+    .calendar-grid {
+        min-width: 1050px;
+        display: grid;
+        grid-template-columns: repeat(7, minmax(145px, 1fr));
     }
 
-    .diff-positive {
-        color:#16834f;
-        font-weight:800;
+    .calendar-weekday {
+        padding: 11px 12px;
+        border-right: 1px solid #e8eef2;
+        border-bottom: 1px solid #e8eef2;
+        background: #f6f9fb;
+        color: #657988;
+        font-size: 9px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        text-align: center;
     }
 
-    .diff-zero {
-        color:#607586;
-        font-weight:800;
+    .calendar-blank,
+    .calendar-day {
+        min-height: 185px;
+        border-right: 1px solid #edf1f4;
+        border-bottom: 1px solid #edf1f4;
     }
 
-    .pagination {
-        padding:16px 18px;
+    .calendar-blank {
+        background: #fafcfd;
     }
 
-    @media(max-width:1200px) {
+    .calendar-day {
+        position: relative;
+        padding: 12px;
+        background: #ffffff;
+    }
+
+    .calendar-day.today {
+        background: #f7fbff;
+        box-shadow: inset 0 0 0 2px rgba(22, 76, 150, .18);
+    }
+
+    .calendar-day.future {
+        background: #fbfcfd;
+    }
+
+    .day-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .day-number {
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        border-radius: 9px;
+        background: #eef3f7;
+        color: #173b59;
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    .calendar-day.today .day-number {
+        background: #164c96;
+        color: #ffffff;
+    }
+
+    .day-total {
+        color: #8a99a5;
+        font-size: 8px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .day-events {
+        display: grid;
+        gap: 6px;
+    }
+
+    .calendar-event {
+        width: 100%;
+        min-height: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 5px 8px;
+        border: 0;
+        border-radius: 7px;
+        font-size: 8px;
+        font-weight: 800;
+        cursor: pointer;
+        text-align: left;
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+    .calendar-event:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 9px rgba(20, 57, 83, .10);
+    }
+
+    .calendar-event strong {
+        font-size: 10px;
+    }
+
+    .calendar-event.done { background: #eaf8ef; color: #1d7b4e; }
+    .calendar-event.pending { background: #fff5dc; color: #9c7014; }
+    .calendar-event.no-attention { background: #fdecec; color: #b13c3c; }
+    .calendar-event.extra { background: #eee9ff; color: #6345a2; }
+    .calendar-event.cancelled { background: #edf0f2; color: #596a78; }
+
+    .future-message {
+        margin-top: 18px;
+        color: #9aa7b0;
+        font-size: 9px;
+        line-height: 1.5;
+        text-align: center;
+    }
+
+    .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 18px;
+        padding: 14px 20px;
+        border-top: 1px solid #edf1f4;
+        background: #fbfcfd;
+    }
+
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: #627786;
+        font-size: 9px;
+        font-weight: 750;
+    }
+
+    .legend-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+    }
+
+    .legend-dot.done { background: #56b47c; }
+    .legend-dot.pending { background: #d5a837; }
+    .legend-dot.no-attention { background: #cf6262; }
+    .legend-dot.extra { background: #8165c5; }
+    .legend-dot.cancelled { background: #8898a5; }
+
+    .modal-backdrop {
+        position: fixed;
+        z-index: 200;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(4, 27, 49, .58);
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-backdrop.open {
+        display: flex;
+    }
+
+    .modal-panel {
+        width: min(1180px, 96vw);
+        max-height: 88vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow: 0 28px 70px rgba(2, 26, 48, .28);
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 19px 20px;
+        border-bottom: 1px solid #e8eef2;
+        background: #fbfcfd;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        color: #0a3158;
+        font-size: 17px;
+    }
+
+    .modal-header p {
+        margin: 5px 0 0;
+        color: #7d8d99;
+        font-size: 10px;
+    }
+
+    .modal-close {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        border: 1px solid #d9e2e8;
+        border-radius: 9px;
+        background: #ffffff;
+        color: #5a7080;
+        font-size: 20px;
+        cursor: pointer;
+    }
+
+    .modal-body {
+        overflow: auto;
+    }
+
+    .modal-loading,
+    .modal-empty,
+    .modal-error {
+        padding: 45px 22px;
+        color: #768894;
+        font-size: 11px;
+        text-align: center;
+    }
+
+    .modal-error {
+        color: #a84040;
+    }
+
+    .detail-table {
+        width: 100%;
+        min-width: 980px;
+        border-collapse: collapse;
+    }
+
+    .detail-table th,
+    .detail-table td {
+        padding: 11px 12px;
+        border-bottom: 1px solid #edf1f4;
+        text-align: left;
+        vertical-align: middle;
+        font-size: 10px;
+    }
+
+    .detail-table th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f7f9fb;
+        color: #687b8b;
+        font-size: 8px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .detail-table td strong {
+        color: #173b59;
+    }
+
+    .table-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .icon-button {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #d5dfe5;
+        border-radius: 9px;
+        background: #ffffff;
+        color: #31536e;
+        text-decoration: none;
+        transition: .2s ease;
+    }
+
+    .icon-button:hover {
+        transform: translateY(-1px);
+        border-color: #9db6c9;
+        background: #f4f8fb;
+        color: #164c96;
+    }
+
+    .icon-button.secondary {
+        border-color: #c8d7e3;
+        background: #edf5fb;
+        color: #164c96;
+    }
+
+    .icon-button svg {
+        width: 17px;
+        height: 17px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    @media (max-width: 1100px) {
+        .filters-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
         .summary-grid {
-            grid-template-columns:repeat(3,1fr);
-        }
-
-        .filters-grid {
-            grid-template-columns:repeat(2,1fr);
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
     }
 
-    @media(max-width:700px) {
-        .summary-grid,
-        .filters-grid {
-            grid-template-columns:1fr;
+    @media (max-width: 700px) {
+        .compliance-header,
+        .calendar-toolbar {
+            flex-direction: column;
+            align-items: stretch;
         }
 
-        .filters-actions {
-            flex-direction:column;
+        .filters-grid,
+        .summary-grid {
+            grid-template-columns: 1fr;
         }
 
-        .btn {
-            width:100%;
+        .filters-actions,
+        .calendar-nav {
+            flex-wrap: wrap;
+        }
+
+        .filters-actions .btn,
+        .calendar-nav a {
+            flex: 1;
+        }
+
+        .modal-backdrop {
+            padding: 10px;
+        }
+
+        .modal-panel {
+            width: 100%;
+            max-height: 94vh;
         }
     }
 </style>
 @endpush
 
 @section('content')
-<div class="page-header">
-    <div class="page-title">
-        <h2>Estado de Arqueos</h2>
+@php
+    $mesCarbon = \Carbon\Carbon::createFromFormat('Y-m', $mes)->startOfMonth();
+    $tituloMes = $mesCarbon->locale('es')->translatedFormat('F Y');
+    $espaciosIniciales = $inicioMes->dayOfWeekIso - 1;
 
-        <p>
-            Consulte el cumplimiento diario de los Agentes,
-            su estado operativo y las diferencias registradas.
-        </p>
-    </div>
-</div>
+    $queryBase = array_filter([
+        'region_id' => $regionId ?: null,
+        'ruta_id' => $rutaId ?: null,
+        'promotor_id' => $promotorId ?: null,
+        'buscar' => $buscar !== '' ? $buscar : null,
+    ], fn ($valor) => $valor !== null && $valor !== '');
+@endphp
 
-<section class="summary-grid">
-    <article class="summary-card info">
-        <span>Agentes activos</span>
-        <strong>{{ $totalActivos }}</strong>
-    </article>
+<div class="compliance-page">
+    <header class="compliance-header">
+        <div class="compliance-title">
+            <h2>Cumplimiento de Arqueos</h2>
 
-    <article class="summary-card success">
-        <span>Arqueos realizados</span>
-        <strong>{{ $realizados }}</strong>
-    </article>
-
-    <article class="summary-card warning">
-        <span>Pendientes</span>
-        <strong>{{ $pendientes }}</strong>
-    </article>
-
-    <article class="summary-card">
-        <span>No atendió</span>
-        <strong>{{ $noAtendio }}</strong>
-    </article>
-
-    <article class="summary-card success">
-        <span>Cumplimiento</span>
-        <strong>{{ number_format($cumplimiento, 1) }}%</strong>
-    </article>
-</section>
-
-<section class="filters-card">
-    <form
-        method="GET"
-        action="{{ route(
-            'gerencia.estado-arqueos.index'
-        ) }}"
-    >
-        <div class="filters-grid">
-            <input
-                type="text"
-                name="buscar"
-                class="form-control"
-                value="{{ $buscar }}"
-                placeholder="Agente, negocio, ruta, región o Promotor"
-            >
-
-            <input
-                type="date"
-                name="fecha"
-                class="form-control"
-                value="{{ $fecha }}"
-            >
-
-            <select
-                name="region_id"
-                class="form-control"
-            >
-                <option value="">
-                    Todas las Regiones
-                </option>
-
-                @foreach($regiones as $region)
-                    <option
-                        value="{{ $region->id }}"
-                        @selected(
-                            $regionId === (int) $region->id
-                        )
-                    >
-                        {{ $region->nombre }}
-                    </option>
-                @endforeach
-            </select>
-
-            <select
-                name="ruta_id"
-                class="form-control"
-            >
-                <option value="">
-                    Todas las Rutas
-                </option>
-
-                @foreach($rutas as $ruta)
-                    <option
-                        value="{{ $ruta->id }}"
-                        @selected(
-                            $rutaId === (int) $ruta->id
-                        )
-                    >
-                        {{ $ruta->codigo }}
-                        — {{ $ruta->nombre }}
-                    </option>
-                @endforeach
-            </select>
-
-            <select
-                name="promotor_id"
-                class="form-control"
-            >
-                <option value="">
-                    Todos los Promotores
-                </option>
-
-                @foreach($promotores as $promotor)
-                    @php
-                        $nombrePromotor = trim(
-                            ($promotor->nombres ?? '')
-                            . ' '
-                            . ($promotor->apellidos ?? '')
-                        );
-                    @endphp
-
-                    <option
-                        value="{{ $promotor->id }}"
-                        @selected(
-                            $promotorId === (int) $promotor->id
-                        )
-                    >
-                        {{ $nombrePromotor !== ''
-                            ? $nombrePromotor
-                            : $promotor->usuario }}
-                    </option>
-                @endforeach
-            </select>
-
-            <select
-                name="estado"
-                class="form-control"
-            >
-                <option value="">
-                    Todos
-                </option>
-
-                <option
-                    value="REALIZADO"
-                    @selected($estado === 'REALIZADO')
-                >
-                    Realizado
-                </option>
-
-                <option
-                    value="PENDIENTE"
-                    @selected($estado === 'PENDIENTE')
-                >
-                    Pendiente
-                </option>
-
-                <option
-                    value="NO_ATENDIO"
-                    @selected($estado === 'NO_ATENDIO')
-                >
-                    No atendió
-                </option>
-            </select>
+            <p>
+                Consulte el cumplimiento diario de los arqueos de agentes durante el mes,
+                con detalle por región, ruta y promotor asignado. Seleccione cualquier
+                categoría de un día para consultar los agentes correspondientes.
+            </p>
         </div>
-
-        <div class="filters-actions">
-            <a
-                href="{{ route(
-                    'gerencia.estado-arqueos.index'
-                ) }}"
-                class="btn btn-secondary"
-            >
-                Limpiar
-            </a>
-
-            <button
-                type="submit"
-                class="btn btn-primary"
-            >
-                Aplicar Filtros
-            </button>
-        </div>
-    </form>
-</section>
-
-<section class="table-card">
-    <header class="table-header">
-        <h3>Estado diario por Agente</h3>
-
-        <p>
-            Fecha consultada:
-            {{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}
-        </p>
     </header>
 
-    <div class="table-responsive">
-        <table>
-            <thead>
-                <tr>
-                    <th>Agente</th>
-                    <th>Propietario</th>
-                    <th>Región</th>
-                    <th>Ruta</th>
-                    <th>Promotor</th>
-                    <th>Estado</th>
-                    <th>Estado arqueo</th>
-                    <th>Diferencia</th>
-                </tr>
-            </thead>
+    <section class="filters-card">
+        <form
+            method="GET"
+            action="{{ route('gerencia.estado-arqueos.index') }}"
+        >
+            <input
+                type="hidden"
+                name="mes"
+                value="{{ $mes }}"
+            >
 
-            <tbody>
-                @forelse($agentes as $agente)
-                    @php
-                        $nombrePromotor = trim(
-                            ($agente->promotor_nombres ?? '')
-                            . ' '
-                            . ($agente->promotor_apellidos ?? '')
-                        );
+            <div class="filters-grid">
+                <input
+                    type="text"
+                    name="buscar"
+                    class="form-control"
+                    value="{{ $buscar }}"
+                    placeholder="Buscar agente, negocio o propietario"
+                >
 
-                        $tieneArqueo =
-                            (int) $agente->arqueo_agente > 0;
+                <select
+                    name="region_id"
+                    class="form-control"
+                >
+                    <option value="">
+                        Todas las regiones
+                    </option>
 
-                        $noAtendioAgente =
-                            $agente->control_diario === 'NO_ATENDIO';
+                    @foreach ($regiones as $region)
+                        <option
+                            value="{{ $region->id }}"
+                            @selected(
+                                $regionId === (int) $region->id
+                            )
+                        >
+                            {{ $region->nombre }}
+                        </option>
+                    @endforeach
+                </select>
 
-                        $estadoOperativo =
-                            $tieneArqueo
-                                ? 'REALIZADO'
-                                : (
-                                    $noAtendioAgente
-                                        ? 'NO ATENDIÓ'
-                                        : 'PENDIENTE'
-                                );
+                <select
+                    name="ruta_id"
+                    class="form-control"
+                >
+                    <option value="">
+                        Todas las rutas
+                    </option>
 
-                        $claseEstado =
-                            $tieneArqueo
-                                ? 'success'
-                                : (
-                                    $noAtendioAgente
-                                        ? 'info'
-                                        : 'warning'
-                                );
+                    @foreach ($rutas as $ruta)
+                        <option
+                            value="{{ $ruta->id }}"
+                            @selected(
+                                $rutaId === (int) $ruta->id
+                            )
+                        >
+                            {{ $ruta->codigo }}
+                            — {{ $ruta->nombre }}
+                        </option>
+                    @endforeach
+                </select>
 
-                        $diferencia =
-                            $agente->diferencia !== null
-                                ? (float) $agente->diferencia
-                                : null;
+                <select
+                    name="promotor_id"
+                    class="form-control"
+                >
+                    <option value="">
+                        Todos los promotores
+                    </option>
 
-                        $claseDiferencia =
-                            $diferencia === null
-                                ? ''
-                                : (
-                                    $diferencia < 0
-                                        ? 'diff-negative'
-                                        : (
-                                            $diferencia > 0
-                                                ? 'diff-positive'
-                                                : 'diff-zero'
-                                        )
-                                );
-                    @endphp
+                    @foreach ($promotores as $promotor)
+                        @php
+                            $nombrePromotor = trim(
+                                ($promotor->nombres ?? '')
+                                . ' '
+                                . ($promotor->apellidos ?? '')
+                            );
+                        @endphp
 
-                    <tr>
-                        <td>
-                            <strong>
-                                {{ $agente->codigo_agente }}
-                                — {{ $agente->nombre_negocio }}
-                            </strong>
-                        </td>
-
-                        <td>
-                            {{ $agente->nombre_propietario }}
-                        </td>
-
-                        <td>
-                            {{ $agente->region_nombre }}
-                        </td>
-
-                        <td>
-                            {{ $agente->ruta_codigo }}
-                            — {{ $agente->ruta_nombre }}
-                        </td>
-
-                        <td>
+                        <option
+                            value="{{ $promotor->id }}"
+                            @selected(
+                                $promotorId === (int) $promotor->id
+                            )
+                        >
                             {{ $nombrePromotor !== ''
                                 ? $nombrePromotor
-                                : (
-                                    $agente->promotor_usuario
-                                    ?? 'Sin asignación'
-                                ) }}
-                        </td>
+                                : $promotor->usuario }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
 
-                        <td>
-                            <span class="badge {{ $claseEstado }}">
-                                {{ $estadoOperativo }}
+            <div class="filters-actions">
+                <a
+                    href="{{ route(
+                        'gerencia.estado-arqueos.index',
+                        ['mes' => $mes]
+                    ) }}"
+                    class="btn btn-secondary"
+                >
+                    Limpiar filtros
+                </a>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Aplicar filtros
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <section class="summary-grid">
+        <article class="summary-card done">
+            <span>Con arqueo</span>
+            <strong>{{ $resumenMes['arqueados'] }}</strong>
+        </article>
+
+        <article class="summary-card pending">
+            <span>Sin arqueo</span>
+            <strong>{{ $resumenMes['sin_arqueo'] }}</strong>
+        </article>
+
+        <article class="summary-card no-attention">
+            <span>No atendieron</span>
+            <strong>{{ $resumenMes['no_atendieron'] }}</strong>
+        </article>
+
+        <article class="summary-card extra">
+            <span>Extemporáneos</span>
+            <strong>{{ $resumenMes['extemporaneos'] }}</strong>
+        </article>
+
+        <article class="summary-card cancelled">
+            <span>Anulados</span>
+            <strong>{{ $resumenMes['anulados'] }}</strong>
+        </article>
+    </section>
+
+    <section class="calendar-card">
+        <header class="calendar-toolbar">
+            <div>
+                <h3>{{ $tituloMes }}</h3>
+
+                <p>
+                    Los días futuros no se contabilizan como incumplimiento.
+                </p>
+            </div>
+
+            <nav
+                class="calendar-nav"
+                aria-label="Navegación del calendario"
+            >
+                <a
+                    href="{{ route(
+                        'gerencia.estado-arqueos.index',
+                        array_merge(
+                            $queryBase,
+                            ['mes' => $mesAnterior]
+                        )
+                    ) }}"
+                >
+                    ← Mes anterior
+                </a>
+
+                <a
+                    href="{{ route(
+                        'gerencia.estado-arqueos.index',
+                        array_merge(
+                            $queryBase,
+                            ['mes' => $mesActual]
+                        )
+                    ) }}"
+                >
+                    Hoy
+                </a>
+
+                <a
+                    href="{{ route(
+                        'gerencia.estado-arqueos.index',
+                        array_merge(
+                            $queryBase,
+                            ['mes' => $mesSiguiente]
+                        )
+                    ) }}"
+                >
+                    Mes siguiente →
+                </a>
+            </nav>
+        </header>
+
+        <div class="calendar-scroll">
+            <div class="calendar-grid">
+                @foreach ([
+                    'Lunes',
+                    'Martes',
+                    'Miércoles',
+                    'Jueves',
+                    'Viernes',
+                    'Sábado',
+                    'Domingo'
+                ] as $diaSemana)
+                    <div class="calendar-weekday">
+                        {{ $diaSemana }}
+                    </div>
+                @endforeach
+
+                @for ($i = 0; $i < $espaciosIniciales; $i++)
+                    <div class="calendar-blank"></div>
+                @endfor
+
+                @foreach ($calendario as $dia)
+                    <article
+                        class="calendar-day
+                            {{ $dia['es_hoy'] ? 'today' : '' }}
+                            {{ $dia['es_futuro'] ? 'future' : '' }}"
+                    >
+                        <div class="day-header">
+                            <span class="day-number">
+                                {{ $dia['dia'] }}
                             </span>
-                        </td>
 
-                        <td>
-                            {{ $agente->estado_arqueo
-                                ? str_replace(
-                                    '_',
-                                    ' ',
-                                    $agente->estado_arqueo
-                                )
-                                : '—' }}
-                        </td>
-
-                        <td>
-                            @if($diferencia === null)
-                                —
-                            @else
-                                <span class="{{ $claseDiferencia }}">
-                                    Q {{ number_format(
-                                        abs($diferencia),
-                                        2
-                                    ) }}
-
-                                    @if($diferencia < 0)
-                                        Faltante
-                                    @elseif($diferencia > 0)
-                                        Sobrante
-                                    @else
-                                        Exacto
-                                    @endif
+                            @if (! $dia['es_futuro'])
+                                <span class="day-total">
+                                    {{ $dia['total_agentes'] }} agentes
                                 </span>
                             @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td
-                            colspan="8"
-                            style="padding:35px;text-align:center;"
-                        >
-                            No se encontraron Agentes
-                            para los filtros seleccionados.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+                        </div>
 
-    @if($agentes->hasPages())
-        <div class="pagination">
-            {{ $agentes->links() }}
+                        @if ($dia['es_futuro'])
+                            <div class="future-message">
+                                Fecha futura
+                            </div>
+                        @else
+                            <div class="day-events">
+                                <button
+                                    type="button"
+                                    class="calendar-event done js-open-detail"
+                                    data-fecha="{{ $dia['fecha'] }}"
+                                    data-categoria="ARQUEADO"
+                                    data-label="Agentes con arqueo"
+                                >
+                                    <span>Con arqueo</span>
+                                    <strong>{{ $dia['arqueados'] }}</strong>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="calendar-event pending js-open-detail"
+                                    data-fecha="{{ $dia['fecha'] }}"
+                                    data-categoria="SIN_ARQUEO"
+                                    data-label="Agentes sin arqueo"
+                                >
+                                    <span>Sin arqueo</span>
+                                    <strong>{{ $dia['sin_arqueo'] }}</strong>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="calendar-event no-attention js-open-detail"
+                                    data-fecha="{{ $dia['fecha'] }}"
+                                    data-categoria="NO_ATENDIO"
+                                    data-label="Agentes que no atendieron"
+                                >
+                                    <span>No atendieron</span>
+                                    <strong>{{ $dia['no_atendieron'] }}</strong>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="calendar-event extra js-open-detail"
+                                    data-fecha="{{ $dia['fecha'] }}"
+                                    data-categoria="EXTEMPORANEO"
+                                    data-label="Arqueos extemporáneos"
+                                >
+                                    <span>Extemporáneos</span>
+                                    <strong>{{ $dia['extemporaneos'] }}</strong>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="calendar-event cancelled js-open-detail"
+                                    data-fecha="{{ $dia['fecha'] }}"
+                                    data-categoria="ANULADO"
+                                    data-label="Arqueos anulados"
+                                >
+                                    <span>Anulados</span>
+                                    <strong>{{ $dia['anulados'] }}</strong>
+                                </button>
+                            </div>
+                        @endif
+                    </article>
+                @endforeach
+            </div>
         </div>
-    @endif
-</section>
+
+        <footer class="legend">
+            <span class="legend-item">
+                <i class="legend-dot done"></i>
+                Con arqueo
+            </span>
+
+            <span class="legend-item">
+                <i class="legend-dot pending"></i>
+                Sin arqueo
+            </span>
+
+            <span class="legend-item">
+                <i class="legend-dot no-attention"></i>
+                No atendieron
+            </span>
+
+            <span class="legend-item">
+                <i class="legend-dot extra"></i>
+                Extemporáneos
+            </span>
+
+            <span class="legend-item">
+                <i class="legend-dot cancelled"></i>
+                Anulados
+            </span>
+        </footer>
+    </section>
+</div>
+
+<div
+    class="modal-backdrop"
+    id="complianceModal"
+    aria-hidden="true"
+>
+    <section
+        class="modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalTitle"
+    >
+        <header class="modal-header">
+            <div>
+                <h3 id="modalTitle">
+                    Detalle de cumplimiento
+                </h3>
+
+                <p id="modalSubtitle">
+                    Seleccione una categoría del calendario.
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="modalClose"
+                aria-label="Cerrar modal"
+            >
+                ×
+            </button>
+        </header>
+
+        <div
+            class="modal-body"
+            id="modalBody"
+        >
+            <div class="modal-loading">
+                Cargando información...
+            </div>
+        </div>
+    </section>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal =
+            document.getElementById('complianceModal');
+
+        const modalClose =
+            document.getElementById('modalClose');
+
+        const modalTitle =
+            document.getElementById('modalTitle');
+
+        const modalSubtitle =
+            document.getElementById('modalSubtitle');
+
+        const modalBody =
+            document.getElementById('modalBody');
+
+        const detailUrl =
+            @json(route('gerencia.estado-arqueos.detalle'));
+
+        const filtros = {
+            region_id: @json($regionId ?: null),
+            ruta_id: @json($rutaId ?: null),
+            promotor_id: @json($promotorId ?: null),
+            buscar: @json($buscar !== '' ? $buscar : null),
+        };
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        function openModal() {
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        }
+
+        function buildActionButtons(agente) {
+            const eyeIcon = `
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                    <circle cx="12" cy="12" r="2.8"></circle>
+                </svg>`;
+
+            const userIcon = `
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="8" r="4"></circle>
+                    <path d="M4 21a8 8 0 0 1 16 0"></path>
+                </svg>`;
+
+            let html =
+                '<div class="table-actions">';
+
+            if (agente.url_arqueo) {
+                html += `
+                    <a
+                        href="${escapeHtml(agente.url_arqueo)}"
+                        class="icon-button"
+                        title="Ver arqueo"
+                        aria-label="Ver arqueo"
+                    >
+                        ${eyeIcon}
+                    </a>
+                `;
+            }
+
+            html += `
+                <a
+                    href="${escapeHtml(agente.url_agente)}"
+                    class="icon-button secondary"
+                    title="Ver agente"
+                    aria-label="Ver agente"
+                >
+                    ${userIcon}
+                </a>
+            </div>`;
+
+            return html;
+        }
+
+        function renderTable(agentes) {
+            if (!agentes.length) {
+                return `
+                    <div class="modal-empty">
+                        No hay agentes en esta categoría para la fecha seleccionada.
+                    </div>
+                `;
+            }
+
+            const rows = agentes.map((agente) => `
+                <tr>
+                    <td>
+                        <strong>
+                            ${escapeHtml(agente.codigo_agente)}
+                        </strong>
+                    </td>
+
+                    <td>
+                        ${escapeHtml(agente.nombre_negocio)}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(agente.nombre_propietario)}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(agente.region)}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(agente.ruta)}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(agente.promotor)}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(agente.numero_arqueo || '—')}
+                    </td>
+
+                    <td>
+                        ${buildActionButtons(agente)}
+                    </td>
+                </tr>
+            `).join('');
+
+            return `
+                <table class="detail-table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Negocio</th>
+                            <th>Propietario</th>
+                            <th>Región</th>
+                            <th>Ruta</th>
+                            <th>Promotor</th>
+                            <th>No. arqueo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function loadDetail(button) {
+            const fecha =
+                button.dataset.fecha;
+
+            const categoria =
+                button.dataset.categoria;
+
+            const label =
+                button.dataset.label;
+
+            modalTitle.textContent = label;
+            modalSubtitle.textContent = fecha;
+
+            modalBody.innerHTML = `
+                <div class="modal-loading">
+                    Cargando información...
+                </div>
+            `;
+
+            openModal();
+
+            const params =
+                new URLSearchParams({
+                    fecha,
+                    categoria,
+                });
+
+            Object.entries(filtros).forEach(
+                ([key, value]) => {
+                    if (
+                        value !== null
+                        && value !== ''
+                    ) {
+                        params.set(
+                            key,
+                            value
+                        );
+                    }
+                }
+            );
+
+            try {
+                const response = await fetch(
+                    `${detailUrl}?${params.toString()}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin',
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        'No fue posible consultar el detalle.'
+                    );
+                }
+
+                const data =
+                    await response.json();
+
+                modalTitle.textContent =
+                    `${data.categoria_texto} (${data.total})`;
+
+                modalSubtitle.textContent =
+                    data.fecha_formateada
+                    || data.fecha;
+
+                modalBody.innerHTML =
+                    renderTable(
+                        data.agentes || []
+                    );
+            } catch (error) {
+                modalBody.innerHTML = `
+                    <div class="modal-error">
+                        No fue posible cargar el detalle.
+                        Intente nuevamente.
+                    </div>
+                `;
+            }
+        }
+
+        document
+            .querySelectorAll('.js-open-detail')
+            .forEach((button) => {
+                button.addEventListener(
+                    'click',
+                    function () {
+                        loadDetail(button);
+                    }
+                );
+            });
+
+        modalClose?.addEventListener(
+            'click',
+            closeModal
+        );
+
+        modal?.addEventListener(
+            'click',
+            function (event) {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            }
+        );
+
+        document.addEventListener(
+            'keydown',
+            function (event) {
+                if (
+                    event.key === 'Escape'
+                    && modal.classList.contains('open')
+                ) {
+                    closeModal();
+                }
+            }
+        );
+    });
+</script>
+@endpush

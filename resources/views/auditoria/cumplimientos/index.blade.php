@@ -1,4 +1,4 @@
-@extends('layouts.jefe')
+@extends('layouts.auditoria')
 
 @section('title', 'Cumplimiento de Arqueos')
 @section('module-title', 'Cumplimiento de Arqueos')
@@ -25,7 +25,7 @@
 
     .compliance-title p {
         margin: 8px 0 0;
-        max-width: 760px;
+        max-width: 820px;
         color: #6d7d8a;
         font-size: 13px;
         line-height: 1.6;
@@ -33,7 +33,8 @@
 
     .filters-card,
     .calendar-card,
-    .summary-card {
+    .summary-card,
+    .visits-card {
         border: 1px solid #e0e8ee;
         background: #ffffff;
         box-shadow: 0 8px 24px rgba(20, 57, 83, .05);
@@ -102,7 +103,7 @@
 
     .summary-grid {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 12px;
     }
 
@@ -132,13 +133,15 @@
     .summary-card.no-attention { border-color: #efc5c5; background: #fffafa; }
     .summary-card.extra { border-color: #d9d0f4; background: #fbf9ff; }
     .summary-card.cancelled { border-color: #d7dde2; background: #fafbfc; }
+    .summary-card.audit { border-color: #c9ddf0; background: #f7fbff; }
 
     .calendar-card {
         overflow: hidden;
         border-radius: 18px;
     }
 
-    .calendar-toolbar {
+    .calendar-toolbar,
+    .visits-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -148,14 +151,16 @@
         background: #fbfcfd;
     }
 
-    .calendar-toolbar h3 {
+    .calendar-toolbar h3,
+    .visits-header h3 {
         margin: 0;
         color: #0a3158;
         font-size: 18px;
         text-transform: capitalize;
     }
 
-    .calendar-toolbar p {
+    .calendar-toolbar p,
+    .visits-header p {
         margin: 4px 0 0;
         color: #82909a;
         font-size: 10px;
@@ -344,6 +349,123 @@
     .legend-dot.extra { background: #8165c5; }
     .legend-dot.cancelled { background: #8898a5; }
 
+    .visits-card {
+        overflow: hidden;
+        border-radius: 18px;
+    }
+
+    .table-scroll {
+        overflow-x: auto;
+    }
+
+    .visits-table {
+        width: 100%;
+        min-width: 1150px;
+        border-collapse: collapse;
+    }
+
+    .visits-table th {
+        padding: 12px 14px;
+        background: #f7f9fb;
+        color: #5d7182;
+        font-size: 9px;
+        font-weight: 850;
+        letter-spacing: .25px;
+        text-align: left;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .visits-table td {
+        padding: 13px 14px;
+        border-top: 1px solid #edf1f4;
+        color: #334f64;
+        font-size: 10px;
+        vertical-align: middle;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 25px;
+        padding: 0 9px;
+        border-radius: 999px;
+        font-size: 8px;
+        font-weight: 850;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .status-certified {
+        background: #eaf8f0;
+        color: #167746;
+    }
+
+    .status-pending {
+        background: #fff6df;
+        color: #9a6913;
+    }
+
+    .status-cancelled {
+        background: #fff0ef;
+        color: #a83c38;
+    }
+
+    .actions-cell {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dce5eb;
+        border-radius: 10px;
+        text-decoration: none;
+        transition: .18s;
+    }
+
+    .action-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+    }
+
+    .action-view {
+        background: #fff;
+        color: #31536e;
+    }
+
+    .action-print {
+        background: #eaf4fb;
+        border-color: #cce0ef;
+        color: #176398;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 12px rgba(20, 57, 83, .09);
+    }
+
+    .empty-state {
+        padding: 42px 20px;
+        color: #7a8c99;
+        text-align: center;
+        font-size: 11px;
+    }
+
+    .pagination-wrapper {
+        padding: 16px 18px;
+        border-top: 1px solid #edf1f4;
+    }
+
     .modal-backdrop {
         position: fixed;
         z-index: 200;
@@ -361,7 +483,7 @@
     }
 
     .modal-panel {
-        width: min(1180px, 96vw);
+        width: min(1100px, 96vw);
         max-height: 88vh;
         display: flex;
         flex-direction: column;
@@ -419,11 +541,13 @@
         text-align: center;
     }
 
-    .modal-error { color: #a84040; }
+    .modal-error {
+        color: #a84040;
+    }
 
     .detail-table {
         width: 100%;
-        min-width: 980px;
+        min-width: 900px;
         border-collapse: collapse;
     }
 
@@ -447,76 +571,47 @@
         text-transform: uppercase;
     }
 
-    .detail-table td strong {
-        color: #173b59;
-    }
+    @media (max-width: 1150px) {
+        .filters-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
 
-    .table-actions {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-    }
-
-    .icon-button {
-        width: 36px;
-        height: 36px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #d5dfe5;
-        border-radius: 9px;
-        background: #ffffff;
-        color: #31536e;
-        text-decoration: none;
-        transition: .2s ease;
-    }
-
-    .icon-button:hover {
-        transform: translateY(-1px);
-        border-color: #9db6c9;
-        background: #f4f8fb;
-        color: #164c96;
-    }
-
-    .icon-button.secondary {
-        border-color: #c8d7e3;
-        background: #edf5fb;
-        color: #164c96;
-    }
-
-    .icon-button svg {
-        width: 17px;
-        height: 17px;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 1.9;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-    }
-
-    @media (max-width: 1100px) {
-        .filters-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .summary-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
     }
 
     @media (max-width: 700px) {
         .compliance-header,
-        .calendar-toolbar {
+        .calendar-toolbar,
+        .visits-header {
             flex-direction: column;
             align-items: stretch;
         }
 
         .filters-grid,
-        .summary-grid { grid-template-columns: 1fr; }
+        .summary-grid {
+            grid-template-columns: 1fr;
+        }
 
         .filters-actions,
-        .calendar-nav { flex-wrap: wrap; }
+        .calendar-nav {
+            flex-wrap: wrap;
+        }
 
         .filters-actions .btn,
-        .calendar-nav a { flex: 1; }
+        .calendar-nav a {
+            flex: 1;
+        }
 
-        .modal-backdrop { padding: 10px; }
-        .modal-panel { width: 100%; max-height: 94vh; }
+        .modal-backdrop {
+            padding: 10px;
+        }
+
+        .modal-panel {
+            width: 100%;
+            max-height: 94vh;
+        }
     }
 </style>
 @endpush
@@ -538,17 +633,19 @@
 <div class="compliance-page">
     <header class="compliance-header">
         <div class="compliance-title">
+            <h2>Cumplimiento de Arqueos</h2>
 
             <p>
-                Consulte el cumplimiento diario de los arqueos de agentes durante el mes,
-                con detalle por región, ruta y promotor asignado. Seleccione cualquier
-                categoría de un día para ver los agentes correspondientes.
+                Consulte el cumplimiento diario de los arqueos de agentes
+                a nivel general, con filtros por región, ruta y promotor.
+                También puede revisar los arqueos de Auditoría realizados
+                por su propio usuario durante el período seleccionado.
             </p>
         </div>
     </header>
 
     <section class="filters-card">
-        <form method="GET" action="{{ route('jefe.estado-arqueos.index') }}">
+        <form method="GET" action="{{ route('auditoria.cumplimientos.index') }}">
             <input type="hidden" name="mes" value="{{ $mes }}">
 
             <div class="filters-grid">
@@ -562,8 +659,12 @@
 
                 <select name="region_id" class="form-control">
                     <option value="">Todas las regiones</option>
+
                     @foreach ($regiones as $region)
-                        <option value="{{ $region->id }}" @selected($regionId === (int) $region->id)>
+                        <option
+                            value="{{ $region->id }}"
+                            @selected($regionId === (int) $region->id)
+                        >
                             {{ $region->nombre }}
                         </option>
                     @endforeach
@@ -571,8 +672,12 @@
 
                 <select name="ruta_id" class="form-control">
                     <option value="">Todas las rutas</option>
+
                     @foreach ($rutas as $ruta)
-                        <option value="{{ $ruta->id }}" @selected($rutaId === (int) $ruta->id)>
+                        <option
+                            value="{{ $ruta->id }}"
+                            @selected($rutaId === (int) $ruta->id)
+                        >
                             {{ $ruta->codigo }} — {{ $ruta->nombre }}
                         </option>
                     @endforeach
@@ -580,13 +685,20 @@
 
                 <select name="promotor_id" class="form-control">
                     <option value="">Todos los promotores</option>
+
                     @foreach ($promotores as $promotor)
                         @php
                             $nombrePromotor = trim(
-                                ($promotor->nombres ?? '') . ' ' . ($promotor->apellidos ?? '')
+                                ($promotor->nombres ?? '')
+                                . ' '
+                                . ($promotor->apellidos ?? '')
                             );
                         @endphp
-                        <option value="{{ $promotor->id }}" @selected($promotorId === (int) $promotor->id)>
+
+                        <option
+                            value="{{ $promotor->id }}"
+                            @selected($promotorId === (int) $promotor->id)
+                        >
                             {{ $nombrePromotor !== '' ? $nombrePromotor : $promotor->usuario }}
                         </option>
                     @endforeach
@@ -594,10 +706,19 @@
             </div>
 
             <div class="filters-actions">
-                <a href="{{ route('jefe.estado-arqueos.index', ['mes' => $mes]) }}" class="btn btn-secondary">
+                <a
+                    href="{{ route('auditoria.cumplimientos.index', ['mes' => $mes]) }}"
+                    class="btn btn-secondary"
+                >
                     Limpiar filtros
                 </a>
-                <button type="submit" class="btn btn-primary">Aplicar filtros</button>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Aplicar filtros
+                </button>
             </div>
         </form>
     </section>
@@ -627,25 +748,47 @@
             <span>Anulados</span>
             <strong>{{ $resumenMes['anulados'] }}</strong>
         </article>
+
+        <article class="summary-card audit">
+            <span>Mis auditorías</span>
+            <strong>{{ $totalVisitasMes }}</strong>
+        </article>
     </section>
 
     <section class="calendar-card">
         <header class="calendar-toolbar">
             <div>
                 <h3>{{ $tituloMes }}</h3>
-                <p>Los días futuros no se contabilizan como incumplimiento.</p>
+                <p>
+                    Los días futuros no se contabilizan como incumplimiento.
+                </p>
             </div>
 
             <nav class="calendar-nav" aria-label="Navegación del calendario">
-                <a href="{{ route('jefe.estado-arqueos.index', array_merge($queryBase, ['mes' => $mesAnterior])) }}">
+                <a
+                    href="{{ route(
+                        'auditoria.cumplimientos.index',
+                        array_merge($queryBase, ['mes' => $mesAnterior])
+                    ) }}"
+                >
                     ← Mes anterior
                 </a>
 
-                <a href="{{ route('jefe.estado-arqueos.index', array_merge($queryBase, ['mes' => $mesActual])) }}">
+                <a
+                    href="{{ route(
+                        'auditoria.cumplimientos.index',
+                        array_merge($queryBase, ['mes' => $mesActual])
+                    ) }}"
+                >
                     Hoy
                 </a>
 
-                <a href="{{ route('jefe.estado-arqueos.index', array_merge($queryBase, ['mes' => $mesSiguiente])) }}">
+                <a
+                    href="{{ route(
+                        'auditoria.cumplimientos.index',
+                        array_merge($queryBase, ['mes' => $mesSiguiente])
+                    ) }}"
+                >
                     Mes siguiente →
                 </a>
             </nav>
@@ -653,8 +796,18 @@
 
         <div class="calendar-scroll">
             <div class="calendar-grid">
-                @foreach (['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as $diaSemana)
-                    <div class="calendar-weekday">{{ $diaSemana }}</div>
+                @foreach ([
+                    'Lunes',
+                    'Martes',
+                    'Miércoles',
+                    'Jueves',
+                    'Viernes',
+                    'Sábado',
+                    'Domingo'
+                ] as $diaSemana)
+                    <div class="calendar-weekday">
+                        {{ $diaSemana }}
+                    </div>
                 @endforeach
 
                 @for ($i = 0; $i < $espaciosIniciales; $i++)
@@ -662,17 +815,27 @@
                 @endfor
 
                 @foreach ($calendario as $dia)
-                    <article class="calendar-day {{ $dia['es_hoy'] ? 'today' : '' }} {{ $dia['es_futuro'] ? 'future' : '' }}">
+                    <article
+                        class="calendar-day
+                            {{ $dia['es_hoy'] ? 'today' : '' }}
+                            {{ $dia['es_futuro'] ? 'future' : '' }}"
+                    >
                         <div class="day-header">
-                            <span class="day-number">{{ $dia['dia'] }}</span>
+                            <span class="day-number">
+                                {{ $dia['dia'] }}
+                            </span>
 
                             @if (! $dia['es_futuro'])
-                                <span class="day-total">{{ $dia['total_agentes'] }} agentes</span>
+                                <span class="day-total">
+                                    {{ $dia['total_agentes'] }} agentes
+                                </span>
                             @endif
                         </div>
 
                         @if ($dia['es_futuro'])
-                            <div class="future-message">Fecha futura</div>
+                            <div class="future-message">
+                                Fecha futura
+                            </div>
                         @else
                             <div class="day-events">
                                 <button
@@ -737,28 +900,207 @@
         </div>
 
         <footer class="legend">
-            <span class="legend-item"><i class="legend-dot done"></i> Con arqueo</span>
-            <span class="legend-item"><i class="legend-dot pending"></i> Sin arqueo</span>
-            <span class="legend-item"><i class="legend-dot no-attention"></i> No atendieron</span>
-            <span class="legend-item"><i class="legend-dot extra"></i> Extemporáneos</span>
-            <span class="legend-item"><i class="legend-dot cancelled"></i> Anulados</span>
+            <span class="legend-item">
+                <i class="legend-dot done"></i>
+                Con arqueo
+            </span>
+
+            <span class="legend-item">
+                <i class="legend-dot pending"></i>
+                Sin arqueo
+            </span>
+
+            <span class="legend-item">
+                <i class="legend-dot no-attention"></i>
+                No atendieron
+            </span>
+
+            <span class="legend-item">
+                <i class="legend-dot extra"></i>
+                Extemporáneos
+            </span>
+
+            <span class="legend-item">
+                <i class="legend-dot cancelled"></i>
+                Anulados
+            </span>
         </footer>
+    </section>
+
+    <section class="visits-card">
+        <header class="visits-header">
+            <div>
+                <h3>Mis arqueos realizados</h3>
+
+                <p>
+                    Arqueos VISITA_AUDITORIA registrados por su usuario durante {{ $tituloMes }}.
+                </p>
+            </div>
+        </header>
+
+        <div class="table-scroll">
+            @if ($visitasAuditoria->isEmpty())
+                <div class="empty-state">
+                    No realizó arqueos de Auditoría durante este período.
+                </div>
+            @else
+                <table class="visits-table">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Fecha</th>
+                            <th>Agente</th>
+                            <th>Propietario</th>
+                            <th>Región</th>
+                            <th>Ruta</th>
+                            <th>Estado</th>
+                            <th>Total</th>
+                            <th>Diferencia</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach ($visitasAuditoria as $arqueo)
+                            @php
+                                $estadoClase = match ($arqueo->estado) {
+                                    'CERTIFICADO' => 'status-certified',
+                                    'ANULADO' => 'status-cancelled',
+                                    default => 'status-pending',
+                                };
+
+                                $estadoTexto = match ($arqueo->estado) {
+                                    'PENDIENTE_CERTIFICACION' => 'Pendiente',
+                                    'CERTIFICADO' => 'Certificado',
+                                    'ANULADO' => 'Anulado',
+                                    default => str_replace('_', ' ', $arqueo->estado),
+                                };
+                            @endphp
+
+                            <tr>
+                                <td>
+                                    <strong>{{ $arqueo->numero_arqueo }}</strong>
+                                </td>
+
+                                <td>
+                                    {{ \Carbon\Carbon::parse($arqueo->fecha_arqueo)->format('d/m/Y') }}
+                                </td>
+
+                                <td>
+                                    <strong>{{ $arqueo->codigo_agente_historico }}</strong>
+                                    <br>
+                                    {{ $arqueo->nombre_negocio_historico }}
+                                </td>
+
+                                <td>
+                                    {{ $arqueo->nombre_propietario_historico }}
+                                </td>
+
+                                <td>
+                                    {{ $arqueo->region_historica }}
+                                </td>
+
+                                <td>
+                                    {{ $arqueo->ruta_historica }}
+                                </td>
+
+                                <td>
+                                    <span class="status-badge {{ $estadoClase }}">
+                                        {{ $estadoTexto }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    Q {{ number_format((float) $arqueo->total_arqueado, 2) }}
+                                </td>
+
+                                <td>
+                                    Q {{ number_format((float) $arqueo->diferencia, 2) }}
+                                </td>
+
+                                <td>
+                                    <div class="actions-cell">
+                                        <a
+                                            href="{{ route('auditoria.arqueos.show', $arqueo->id) }}"
+                                            class="action-btn action-view"
+                                            title="Ver arqueo"
+                                            aria-label="Ver arqueo"
+                                        >
+                                            <svg viewBox="0 0 24 24">
+                                                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/>
+                                                <circle cx="12" cy="12" r="2.8"/>
+                                            </svg>
+                                        </a>
+
+                                        <a
+                                            target="_blank"
+                                            href="{{ route('auditoria.arqueos.imprimir', $arqueo->id) }}"
+                                            class="action-btn action-print"
+                                            title="Imprimir PDF"
+                                            aria-label="Imprimir PDF"
+                                        >
+                                            <svg viewBox="0 0 24 24">
+                                                <path d="M6 9V3h12v6"/>
+                                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                                                <path d="M6 14h12v7H6z"/>
+                                            </svg>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+        </div>
+
+        @if ($visitasAuditoria->hasPages())
+            <div class="pagination-wrapper">
+                {{ $visitasAuditoria->links() }}
+            </div>
+        @endif
     </section>
 </div>
 
-<div class="modal-backdrop" id="complianceModal" aria-hidden="true">
-    <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+<div
+    class="modal-backdrop"
+    id="complianceModal"
+    aria-hidden="true"
+>
+    <section
+        class="modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalTitle"
+    >
         <header class="modal-header">
             <div>
-                <h3 id="modalTitle">Detalle de cumplimiento</h3>
-                <p id="modalSubtitle">Seleccione una categoría del calendario.</p>
+                <h3 id="modalTitle">
+                    Detalle de cumplimiento
+                </h3>
+
+                <p id="modalSubtitle">
+                    Seleccione una categoría del calendario.
+                </p>
             </div>
 
-            <button type="button" class="modal-close" id="modalClose" aria-label="Cerrar modal">×</button>
+            <button
+                type="button"
+                class="modal-close"
+                id="modalClose"
+                aria-label="Cerrar modal"
+            >
+                ×
+            </button>
         </header>
 
-        <div class="modal-body" id="modalBody">
-            <div class="modal-loading">Cargando información...</div>
+        <div
+            class="modal-body"
+            id="modalBody"
+        >
+            <div class="modal-loading">
+                Cargando información...
+            </div>
         </div>
     </section>
 </div>
@@ -767,12 +1109,23 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const modal = document.getElementById('complianceModal');
-        const modalClose = document.getElementById('modalClose');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalSubtitle = document.getElementById('modalSubtitle');
-        const modalBody = document.getElementById('modalBody');
-        const detailUrl = @json(route('jefe.estado-arqueos.detalle'));
+        const modal =
+            document.getElementById('complianceModal');
+
+        const modalClose =
+            document.getElementById('modalClose');
+
+        const modalTitle =
+            document.getElementById('modalTitle');
+
+        const modalSubtitle =
+            document.getElementById('modalSubtitle');
+
+        const modalBody =
+            document.getElementById('modalBody');
+
+        const detailUrl =
+            @json(route('auditoria.cumplimientos.detalle'));
 
         const filtros = {
             region_id: @json($regionId ?: null),
@@ -802,52 +1155,40 @@
             document.body.style.overflow = '';
         }
 
-        function buildActionButtons(agente) {
-            const eyeIcon = `
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
-                    <circle cx="12" cy="12" r="2.8"></circle>
-                </svg>`;
-
-            const userIcon = `
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="8" r="4"></circle>
-                    <path d="M4 21a8 8 0 0 1 16 0"></path>
-                </svg>`;
-
-            let html = '<div class="table-actions">';
-
-            if (agente.url_arqueo) {
-                html += `
-                    <a href="${escapeHtml(agente.url_arqueo)}" class="icon-button" title="Ver arqueo" aria-label="Ver arqueo">
-                        ${eyeIcon}
-                    </a>`;
-            }
-
-            html += `
-                <a href="${escapeHtml(agente.url_agente)}" class="icon-button secondary" title="Ver agente" aria-label="Ver agente">
-                    ${userIcon}
-                </a>
-            </div>`;
-
-            return html;
-        }
-
         function renderTable(agentes) {
             if (!agentes.length) {
-                return '<div class="modal-empty">No hay agentes en esta categoría para la fecha seleccionada.</div>';
+                return `
+                    <div class="modal-empty">
+                        No hay agentes en esta categoría para la fecha seleccionada.
+                    </div>
+                `;
             }
 
             const rows = agentes.map((agente) => `
                 <tr>
-                    <td><strong>${escapeHtml(agente.codigo_agente)}</strong></td>
-                    <td>${escapeHtml(agente.nombre_negocio)}</td>
-                    <td>${escapeHtml(agente.nombre_propietario)}</td>
-                    <td>${escapeHtml(agente.region)}</td>
-                    <td>${escapeHtml(agente.ruta)}</td>
-                    <td>${escapeHtml(agente.promotor)}</td>
-                    <td>${escapeHtml(agente.numero_arqueo || '—')}</td>
-                    <td>${buildActionButtons(agente)}</td>
+                    <td>
+                        <strong>
+                            ${escapeHtml(agente.codigo_agente)}
+                        </strong>
+                    </td>
+                    <td>
+                        ${escapeHtml(agente.nombre_negocio)}
+                    </td>
+                    <td>
+                        ${escapeHtml(agente.nombre_propietario)}
+                    </td>
+                    <td>
+                        ${escapeHtml(agente.region)}
+                    </td>
+                    <td>
+                        ${escapeHtml(agente.ruta)}
+                    </td>
+                    <td>
+                        ${escapeHtml(agente.promotor)}
+                    </td>
+                    <td>
+                        ${escapeHtml(agente.numero_arqueo || '—')}
+                    </td>
                 </tr>
             `).join('');
 
@@ -862,77 +1203,135 @@
                             <th>Ruta</th>
                             <th>Promotor</th>
                             <th>No. arqueo</th>
-                            <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>${rows}</tbody>
-                </table>`;
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            `;
         }
 
         async function loadDetail(button) {
-            const fecha = button.dataset.fecha;
-            const categoria = button.dataset.categoria;
-            const label = button.dataset.label;
+            const fecha =
+                button.dataset.fecha;
+
+            const categoria =
+                button.dataset.categoria;
+
+            const label =
+                button.dataset.label;
 
             modalTitle.textContent = label;
             modalSubtitle.textContent = fecha;
-            modalBody.innerHTML = '<div class="modal-loading">Cargando información...</div>';
+
+            modalBody.innerHTML = `
+                <div class="modal-loading">
+                    Cargando información...
+                </div>
+            `;
+
             openModal();
 
-            const params = new URLSearchParams({ fecha, categoria });
-
-            Object.entries(filtros).forEach(([key, value]) => {
-                if (value !== null && value !== '') {
-                    params.set(key, value);
-                }
-            });
-
-            try {
-                const response = await fetch(`${detailUrl}?${params.toString()}`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    credentials: 'same-origin',
+            const params =
+                new URLSearchParams({
+                    fecha,
+                    categoria,
                 });
 
+            Object.entries(filtros).forEach(
+                ([key, value]) => {
+                    if (
+                        value !== null
+                        && value !== ''
+                    ) {
+                        params.set(
+                            key,
+                            value
+                        );
+                    }
+                }
+            );
+
+            try {
+                const response = await fetch(
+                    `${detailUrl}?${params.toString()}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin',
+                    }
+                );
+
                 if (!response.ok) {
-                    throw new Error('No fue posible consultar el detalle.');
+                    throw new Error(
+                        'No fue posible consultar el detalle.'
+                    );
                 }
 
-                const data = await response.json();
+                const data =
+                    await response.json();
 
-                modalTitle.textContent = `${data.categoria_texto} (${data.total})`;
-                modalSubtitle.textContent = data.fecha_formateada || data.fecha;
-                modalBody.innerHTML = renderTable(data.agentes || []);
+                modalTitle.textContent =
+                    `${data.categoria_texto} (${data.total})`;
+
+                modalSubtitle.textContent =
+                    data.fecha_formateada
+                    || data.fecha;
+
+                modalBody.innerHTML =
+                    renderTable(
+                        data.agentes || []
+                    );
             } catch (error) {
                 modalBody.innerHTML = `
                     <div class="modal-error">
-                        No fue posible cargar el detalle. Intente nuevamente.
-                    </div>`;
+                        No fue posible cargar el detalle.
+                        Intente nuevamente.
+                    </div>
+                `;
             }
         }
 
-        document.querySelectorAll('.js-open-detail').forEach((button) => {
-            button.addEventListener('click', function () {
-                loadDetail(button);
+        document
+            .querySelectorAll('.js-open-detail')
+            .forEach((button) => {
+                button.addEventListener(
+                    'click',
+                    function () {
+                        loadDetail(button);
+                    }
+                );
             });
-        });
 
-        modalClose.addEventListener('click', closeModal);
+        modalClose?.addEventListener(
+            'click',
+            closeModal
+        );
 
-        modal.addEventListener('click', function (event) {
-            if (event.target === modal) {
-                closeModal();
+        modal?.addEventListener(
+            'click',
+            function (event) {
+                if (event.target === modal) {
+                    closeModal();
+                }
             }
-        });
+        );
 
-        document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && modal.classList.contains('open')) {
-                closeModal();
+        document.addEventListener(
+            'keydown',
+            function (event) {
+                if (
+                    event.key === 'Escape'
+                    && modal.classList.contains('open')
+                ) {
+                    closeModal();
+                }
             }
-        });
+        );
     });
 </script>
 @endpush

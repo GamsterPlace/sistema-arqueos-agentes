@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Gerencia;
+namespace App\Http\Controllers\Administrador;
 
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
-class EstadoArqueosController extends Controller
+class CumplimientoArqueoController extends Controller
 {
     private const ESTADOS_ARQUEO_FINALIZADO = [
         'PENDIENTE_CERTIFICACION',
@@ -836,7 +836,7 @@ class EstadoArqueosController extends Controller
 
         abort_if(
             ! $usuario->rol
-            || $usuario->rol->nombre !== 'Gerencia',
+            || $usuario->rol->nombre !== 'Administrador',
             403,
             'No tiene autorización para acceder a esta sección.'
         );

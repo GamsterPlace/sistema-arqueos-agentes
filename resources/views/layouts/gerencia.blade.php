@@ -492,11 +492,11 @@
             }
 
             .logout-button svg {
-            width: 18px;
-            height: 18px;
-        }
+                width: 18px;
+                height: 18px;
+            }
 
-        .main-area {
+            .main-area {
                 margin-left: 0;
             }
 
@@ -583,8 +583,23 @@
                             : ''
                     }}"
                 >
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M6 16V9"/><path d="M12 16V5"/><path d="M18 16v-4"/></svg></span>
-                    Estado de Arqueos
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <rect x="3" y="5" width="18" height="16" rx="2"/>
+                            <path d="M16 3v4"/>
+                            <path d="M8 3v4"/>
+                            <path d="M3 10h18"/>
+                            <path d="m9 16 2 2 4-4"/>
+                        </svg>
+                    </span>
+                    Cumplimiento de Arqueos
                 </a>
             </div>
 

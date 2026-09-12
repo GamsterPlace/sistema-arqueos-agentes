@@ -711,6 +711,22 @@
                     </span>
                     Dashboard
                 </a>
+
+                <a
+                    href="{{ route('administrador.cumplimientos.index') }}"
+                    class="navigation-link {{ request()->routeIs('administrador.cumplimientos.*') ? 'active' : '' }}"
+                >
+                    <span class="navigation-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="5" width="18" height="16" rx="2"/>
+                            <path d="M16 3v4"/>
+                            <path d="M8 3v4"/>
+                            <path d="M3 10h18"/>
+                            <path d="m9 16 2 2 4-4"/>
+                        </svg>
+                    </span>
+                    Cumplimiento de Arqueos
+                </a>
             </div>
 
             <p class="navigation-label">
