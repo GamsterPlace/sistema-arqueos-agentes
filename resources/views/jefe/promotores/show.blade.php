@@ -269,7 +269,7 @@
                 <h3>
                     {{ $nombreCompleto !== ''
                         ? $nombreCompleto
-                        : $promotor->nombre_usuario }}
+                        : $promotor->usuario }}
                 </h3>
 
                 <p>Promotor de Agentes MICOOPE</p>
@@ -279,7 +279,7 @@
                 <div class="identity-row">
                     <span>Usuario</span>
                     <strong>
-                        {{ $promotor->nombre_usuario }}
+                        {{ $promotor->usuario }}
                     </strong>
                 </div>
 
