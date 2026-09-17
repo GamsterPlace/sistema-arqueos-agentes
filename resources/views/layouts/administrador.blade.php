@@ -1009,24 +1009,6 @@
         </header>
 
         <div class="content-wrapper">
-            @if (session('success'))
-                <div class="alert-message success">
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            @if (session('warning'))
-                <div class="alert-message warning">
-                    {{ session('warning') }}
-                </div>
-            @endif
-
-            @if (session('error'))
-                <div class="alert-message error">
-                    {{ session('error') }}
-                </div>
-            @endif
-
             @yield('content')
         </div>
     </main>

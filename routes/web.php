@@ -589,6 +589,31 @@ Route::middleware([
         )->name('rutas.agentes.reasignar');
 
         Route::get(
+            '/rutas/{ruta}/promotor',
+            [JefeRutaController::class, 'promotor']
+        )->name('rutas.promotor');
+
+        Route::post(
+            '/rutas/{ruta}/promotor/asignar',
+            [JefeRutaController::class, 'asignarPromotor']
+        )->name('rutas.promotor.asignar');
+
+        Route::patch(
+            '/rutas/{ruta}/promotor/reasignar',
+            [JefeRutaController::class, 'reasignarPromotor']
+        )->name('rutas.promotor.reasignar');
+
+        Route::post(
+            '/rutas/{ruta}/promotor/temporal',
+            [JefeRutaController::class, 'asignarPromotorTemporal']
+        )->name('rutas.promotor.temporal');
+
+        Route::patch(
+            '/rutas/{ruta}/promotor/{asignacion}/finalizar',
+            [JefeRutaController::class, 'finalizarAsignacionPromotor']
+        )->name('rutas.promotor.finalizar');
+
+        Route::get(
             '/regiones',
             [JefeRegionController::class, 'index']
         )->name('regiones.index');
@@ -702,6 +727,10 @@ Route::middleware([
             '/perfil',
             [JefePerfilController::class, 'index']
         )->name('perfil.index');
+
+
+
+
 
     });
 
