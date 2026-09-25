@@ -1006,10 +1006,32 @@
 
                 <input type="hidden" name="detalle" id="detalleInput">
 
-                <div class="form-actions">
-                    <a href="{{ route('agente.arqueos.index') }}" class="form-button cancel-button">Cancelar</a>
-                    <button type="submit" id="submitButton" class="form-button submit-button">Finalizar Arqueo</button>
-                </div>
+                    @if (($esExtemporaneo ?? false) && $habilitacion)
+                        <input
+                            type="hidden"
+                            name="habilitacion_id"
+                            value="{{ $habilitacion->id }}"
+                        >
+                    @endif
+
+                    <div class="form-actions">
+                        <a
+                            href="{{ ($esExtemporaneo ?? false)
+                                ? route('agente.arqueos-extemporaneos.index')
+                                : route('agente.arqueos.index') }}"
+                            class="form-button cancel-button"
+                        >
+                            Cancelar
+                        </a>
+
+                        <button
+                            type="submit"
+                            id="submitButton"
+                            class="form-button submit-button"
+                        >
+                            Finalizar Arqueo
+                        </button>
+                    </div>
             </div>
         </article>
     </form>
