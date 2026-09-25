@@ -67,7 +67,7 @@ class PerfilController extends Controller
                     'max:80',
                     Rule::unique(
                         'usuarios',
-                        'nombre_usuario'
+                        'usuario'
                     )->ignore($usuario->id),
                 ],
                 'nombres' => [
@@ -108,7 +108,7 @@ class PerfilController extends Controller
 
             $usuarioAnterior = [
                 'id' => (int) $usuario->id,
-                'nombre_usuario' => $usuario->nombre_usuario,
+                'usuario' => $usuario->usuario,
             ];
 
             $datosPersonalesAnteriores = $usuario->datosPersonales
@@ -130,7 +130,7 @@ class PerfilController extends Controller
             */
 
             $usuario->update([
-                'nombre_usuario' =>
+                'usuario' =>
                     trim($datosValidados['nombre_usuario']),
             ]);
 
@@ -180,8 +180,7 @@ class PerfilController extends Controller
                 valoresAnteriores: $usuarioAnterior,
                 valoresNuevos: [
                     'id' => (int) $usuario->id,
-                    'nombre_usuario' =>
-                        $usuario->nombre_usuario,
+                    'usuario' => $usuario->usuario,
                 ]
             );
 
