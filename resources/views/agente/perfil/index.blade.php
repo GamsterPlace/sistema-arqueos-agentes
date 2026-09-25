@@ -335,6 +335,15 @@
             )
         )
         ->implode('');
+
+    $estadoActivo = $agente->estado === true
+        || $agente->estado === 1
+        || $agente->estado === '1'
+        || $agente->estado === 'ACTIVO';
+
+    $estadoTexto = $estadoActivo
+        ? 'ACTIVO'
+        : 'INACTIVO';
 @endphp
 
 <div class="page-header">
@@ -352,6 +361,12 @@
         {{ $agente->codigo_agente }}
     </div>
 </div>
+
+@if (session('success'))
+    <div class="alert-message success">
+        {{ session('success') }}
+    </div>
+@endif
 
 @if ($errors->any())
     <div
@@ -373,7 +388,7 @@
                 <h3>
                     {{ $nombreCompleto !== ''
                         ? $nombreCompleto
-                        : $usuario->nombre_usuario }}
+                        : $usuario->usuario }}
                 </h3>
 
                 <p>
@@ -384,13 +399,15 @@
             <div class="profile-card-body">
                 <div class="profile-row">
                     <span>Usuario</span>
+
                     <strong>
-                        {{ $usuario->nombre_usuario }}
+                        {{ $usuario->usuario }}
                     </strong>
                 </div>
 
                 <div class="profile-row">
                     <span>Negocio</span>
+
                     <strong>
                         {{ $agente->nombre_negocio }}
                     </strong>
@@ -398,6 +415,7 @@
 
                 <div class="profile-row">
                     <span>Ruta</span>
+
                     <strong>
                         {{ $ruta?->nombre ?? 'Sin ruta' }}
                     </strong>
@@ -405,6 +423,7 @@
 
                 <div class="profile-row">
                     <span>Región</span>
+
                     <strong>
                         {{ $region?->nombre ?? 'Sin región' }}
                     </strong>
@@ -414,12 +433,14 @@
                     <span>Estado</span>
 
                     <strong>
-                        <span class="status-badge {{
-                            $agente->estado === 'ACTIVO'
-                                ? 'status-active'
-                                : 'status-inactive'
-                        }}">
-                            {{ $agente->estado }}
+                        <span
+                            class="status-badge {{
+                                $estadoActivo
+                                    ? 'status-active'
+                                    : 'status-inactive'
+                            }}"
+                        >
+                            {{ $estadoTexto }}
                         </span>
                     </strong>
                 </div>
@@ -461,6 +482,8 @@
                                     'nombres',
                                     $datosPersonales?->nombres
                                 ) }}"
+                                maxlength="120"
+                                autocomplete="given-name"
                                 required
                             >
 
@@ -485,6 +508,8 @@
                                     'apellidos',
                                     $datosPersonales?->apellidos
                                 ) }}"
+                                maxlength="120"
+                                autocomplete="family-name"
                                 required
                             >
 
@@ -507,8 +532,10 @@
                                 class="form-control"
                                 value="{{ old(
                                     'nombre_usuario',
-                                    $usuario->nombre_usuario
+                                    $usuario->usuario
                                 ) }}"
+                                maxlength="80"
+                                autocomplete="username"
                                 required
                             >
 
@@ -551,30 +578,52 @@
                 <div class="institutional-grid">
                     <div class="institutional-item">
                         <span>Código del agente</span>
-                        <strong>{{ $agente->codigo_agente }}</strong>
+
+                        <strong>
+                            {{ $agente->codigo_agente }}
+                        </strong>
                     </div>
 
                     <div class="institutional-item">
                         <span>Nombre del negocio</span>
-                        <strong>{{ $agente->nombre_negocio }}</strong>
+
+                        <strong>
+                            {{ $agente->nombre_negocio }}
+                        </strong>
                     </div>
 
                     <div class="institutional-item">
                         <span>Propietario / receptor</span>
-                        <strong>{{ $agente->nombre_propietario }}</strong>
+
+                        <strong>
+                            {{ $agente->propietario ?: 'No registrado' }}
+                        </strong>
                     </div>
 
                     <div class="institutional-item">
                         <span>Ruta</span>
+
                         <strong>
-                            {{ $ruta?->codigo }}
-                            {{ $ruta?->codigo && $ruta?->nombre ? '—' : '' }}
-                            {{ $ruta?->nombre ?? 'Sin ruta asignada' }}
+                            @if ($ruta)
+                                {{ $ruta->codigo ?? '' }}
+
+                                @if (
+                                    ! empty($ruta->codigo)
+                                    && ! empty($ruta->nombre)
+                                )
+                                    —
+                                @endif
+
+                                {{ $ruta->nombre ?? 'Sin ruta asignada' }}
+                            @else
+                                Sin ruta asignada
+                            @endif
                         </strong>
                     </div>
 
                     <div class="institutional-item">
                         <span>Región</span>
+
                         <strong>
                             {{ $region?->nombre ?? 'Sin región asignada' }}
                         </strong>
@@ -582,6 +631,7 @@
 
                     <div class="institutional-item full">
                         <span>Dirección</span>
+
                         <strong>
                             {{ $agente->direccion ?: 'No registrada' }}
                         </strong>
@@ -598,7 +648,9 @@
             <div class="content-card-body">
                 <div class="security-box">
                     <div>
-                        <strong>Cambio de contraseña</strong>
+                        <strong>
+                            Cambio de contraseña
+                        </strong>
 
                         <p>
                             Actualice periódicamente su contraseña
