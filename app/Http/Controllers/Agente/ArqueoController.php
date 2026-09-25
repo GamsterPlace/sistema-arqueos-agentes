@@ -183,6 +183,39 @@ class ArqueoController extends Controller
                 );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDACIÓN DE "NO ATENDIÓ"
+        |--------------------------------------------------------------------------
+        |
+        | Esta validación aplica únicamente al arqueo ordinario del día.
+        | Una habilitación extemporánea constituye una autorización explícita
+        | para registrar el arqueo correspondiente a una fecha anterior.
+        |
+        */
+
+        if (! $esExtemporaneo) {
+            $noAtendioHoy = DB::table('controles_diarios')
+                ->where('agente_id', $agente->id)
+                ->whereDate('fecha', today())
+                ->where('tipo', 'NO_ATENDIO')
+                ->where('vigente', true)
+                ->exists();
+
+            if ($noAtendioHoy) {
+                $request->session()->forget(
+                    'arqueo_agente_contexto'
+                );
+
+                return redirect()
+                    ->route('agente.dashboard')
+                    ->with(
+                        'warning',
+                        'No puede realizar el arqueo de hoy porque el día fue marcado como "No atendió".'
+                    );
+            }
+        }
+
         $horaInicio = now();
 
         /*
@@ -532,6 +565,34 @@ class ArqueoController extends Controller
                                 . '.'
                             : 'Ya existe un arqueo registrado para el día de hoy.',
                     ]);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | BLOQUEO POR "NO ATENDIÓ"
+                |--------------------------------------------------------------------------
+                |
+                | Se vuelve a comprobar dentro de la transacción para impedir que
+                | un formulario abierto previamente pueda crear un arqueo ordinario
+                | después de que el día haya sido marcado como NO_ATENDIO.
+                |
+                */
+
+                if (! $esExtemporaneo) {
+                    $noAtendioHoy = DB::table('controles_diarios')
+                        ->where('agente_id', $agente->id)
+                        ->whereDate('fecha', today())
+                        ->where('tipo', 'NO_ATENDIO')
+                        ->where('vigente', true)
+                        ->lockForUpdate()
+                        ->exists();
+
+                    if ($noAtendioHoy) {
+                        throw ValidationException::withMessages([
+                            'arqueo' =>
+                                'No puede registrar el arqueo porque el día de hoy fue marcado como "No atendió".',
+                        ]);
+                    }
                 }
 
                 $totalBilletes = 0.00;

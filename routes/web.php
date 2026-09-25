@@ -1043,6 +1043,10 @@ Route::middleware([
             [PerfilAgenteController::class, 'actualizar']
         )->name('perfil.actualizar');
 
+        Route::post(
+            '/no-atendio',
+            [DashboardAgenteController::class, 'marcarNoAtendio']
+        )->name('no-atendio.store');
 
 
 
