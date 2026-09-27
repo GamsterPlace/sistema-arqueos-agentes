@@ -94,7 +94,7 @@ class CumplimientoArqueoController extends Controller
         );
 
         return view(
-            'gerencia.estado-arqueos.index',
+            'administrador.cumplimientos.index',
             [
                 'regiones' => $regiones,
                 'rutas' => $rutas,
