@@ -258,7 +258,98 @@
 
         @if($registros->hasPages())
             <div class="pagination-wrapper">
-                {{ $registros->links() }}
+                <div class="custom-pagination">
+
+                    <div class="pagination-info">
+                        Mostrando
+                        <strong>{{ $registros->firstItem() }}</strong>
+                        a
+                        <strong>{{ $registros->lastItem() }}</strong>
+                        de
+                        <strong>{{ $registros->total() }}</strong>
+                        registros
+                    </div>
+
+                    <div class="pagination-links">
+
+                        @if($registros->onFirstPage())
+                            <span class="pagination-button disabled">
+                                ‹ Anterior
+                            </span>
+                        @else
+                            <a
+                                href="{{ $registros->previousPageUrl() }}"
+                                class="pagination-button"
+                            >
+                                ‹ Anterior
+                            </a>
+                        @endif
+
+                        @php
+                            $paginaActual = $registros->currentPage();
+                            $ultimaPagina = $registros->lastPage();
+
+                            $inicio = max(1, $paginaActual - 2);
+                            $fin = min($ultimaPagina, $paginaActual + 2);
+                        @endphp
+
+                        @if($inicio > 1)
+                            <a
+                                href="{{ $registros->url(1) }}"
+                                class="pagination-number"
+                            >
+                                1
+                            </a>
+
+                            @if($inicio > 2)
+                                <span class="pagination-dots">…</span>
+                            @endif
+                        @endif
+
+                        @for($pagina = $inicio; $pagina <= $fin; $pagina++)
+                            @if($pagina === $paginaActual)
+                                <span class="pagination-number active">
+                                    {{ $pagina }}
+                                </span>
+                            @else
+                                <a
+                                    href="{{ $registros->url($pagina) }}"
+                                    class="pagination-number"
+                                >
+                                    {{ $pagina }}
+                                </a>
+                            @endif
+                        @endfor
+
+                        @if($fin < $ultimaPagina)
+                            @if($fin < $ultimaPagina - 1)
+                                <span class="pagination-dots">…</span>
+                            @endif
+
+                            <a
+                                href="{{ $registros->url($ultimaPagina) }}"
+                                class="pagination-number"
+                            >
+                                {{ $ultimaPagina }}
+                            </a>
+                        @endif
+
+                        @if($registros->hasMorePages())
+                            <a
+                                href="{{ $registros->nextPageUrl() }}"
+                                class="pagination-button"
+                            >
+                                Siguiente ›
+                            </a>
+                        @else
+                            <span class="pagination-button disabled">
+                                Siguiente ›
+                            </span>
+                        @endif
+
+                    </div>
+
+                </div>
             </div>
         @endif
     </section>
