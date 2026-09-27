@@ -325,6 +325,11 @@ Route::middleware([
             [AuditoriaSistemaAdministradorController::class, 'show']
         )->name('auditoria-sistema.show');
 
+        Route::get(
+            '/cumplimientos',
+            [CumplimientoPromotorController::class, 'index']
+        )->name('cumplimientos.index');
+
 
 
 
