@@ -66,6 +66,7 @@ use App\Http\Controllers\Administrador\PerfilController as PerfilAdministradorCo
 use App\Http\Controllers\Administrador\AgenteController as AgenteAdministradorController;
 use App\Http\Controllers\Administrador\AuditoriaAgentesController as AuditoriaAgentesAdministradorController;
 use App\Http\Controllers\Administrador\AuditoriaSistemaController as AuditoriaSistemaAdministradorController;
+use App\Http\Controllers\Administrador\CumplimientoArqueoController as CumplimientoArqueoAdministradorController;
 
 
 use App\Http\Controllers\Auditoria\DashboardController as DashboardAuditoriaController;
@@ -327,8 +328,13 @@ Route::middleware([
 
         Route::get(
             '/cumplimientos',
-            [CumplimientoPromotorController::class, 'index']
+            [CumplimientoArqueoAdministradorController::class, 'index']
         )->name('cumplimientos.index');
+
+        Route::get(
+            '/cumplimientos/detalle',
+            [CumplimientoArqueoAdministradorController::class, 'detalle']
+        )->name('cumplimientos.detalle');
 
 
 
