@@ -371,10 +371,18 @@
         </div>
 
         @if($registros->hasPages())
-            <div class="pagination-wrapper">
-                <div class="custom-pagination">
+            @php
+                $paginaActual = $registros->currentPage();
+                $ultimaPagina = $registros->lastPage();
 
-                    <div class="pagination-info">
+                $inicio = max(1, $paginaActual - 2);
+                $fin = min($ultimaPagina, $paginaActual + 2);
+            @endphp
+
+            <div class="pagination-wrapper">
+                <div class="audit-pagination">
+
+                    <div class="audit-pagination-info">
                         Mostrando
                         <strong>{{ $registros->firstItem() }}</strong>
                         a
@@ -384,51 +392,52 @@
                         registros
                     </div>
 
-                    <div class="pagination-links">
-
+                    <nav
+                        class="audit-pagination-nav"
+                        aria-label="Paginación de auditoría"
+                    >
                         @if($registros->onFirstPage())
-                            <span class="pagination-button disabled">
-                                ‹ Anterior
+                            <span class="audit-page-btn disabled">
+                                <span class="audit-page-arrow">‹</span>
+                                Anterior
                             </span>
                         @else
                             <a
                                 href="{{ $registros->previousPageUrl() }}"
-                                class="pagination-button"
+                                class="audit-page-btn"
                             >
-                                ‹ Anterior
+                                <span class="audit-page-arrow">‹</span>
+                                Anterior
                             </a>
                         @endif
-
-                        @php
-                            $paginaActual = $registros->currentPage();
-                            $ultimaPagina = $registros->lastPage();
-
-                            $inicio = max(1, $paginaActual - 2);
-                            $fin = min($ultimaPagina, $paginaActual + 2);
-                        @endphp
 
                         @if($inicio > 1)
                             <a
                                 href="{{ $registros->url(1) }}"
-                                class="pagination-number"
+                                class="audit-page-btn number"
                             >
                                 1
                             </a>
 
                             @if($inicio > 2)
-                                <span class="pagination-dots">…</span>
+                                <span class="audit-page-dots">
+                                    …
+                                </span>
                             @endif
                         @endif
 
                         @for($pagina = $inicio; $pagina <= $fin; $pagina++)
                             @if($pagina === $paginaActual)
-                                <span class="pagination-number active">
+                                <span
+                                    class="audit-page-btn number active"
+                                    aria-current="page"
+                                >
                                     {{ $pagina }}
                                 </span>
                             @else
                                 <a
                                     href="{{ $registros->url($pagina) }}"
-                                    class="pagination-number"
+                                    class="audit-page-btn number"
                                 >
                                     {{ $pagina }}
                                 </a>
@@ -437,12 +446,14 @@
 
                         @if($fin < $ultimaPagina)
                             @if($fin < $ultimaPagina - 1)
-                                <span class="pagination-dots">…</span>
+                                <span class="audit-page-dots">
+                                    …
+                                </span>
                             @endif
 
                             <a
                                 href="{{ $registros->url($ultimaPagina) }}"
-                                class="pagination-number"
+                                class="audit-page-btn number"
                             >
                                 {{ $ultimaPagina }}
                             </a>
@@ -451,17 +462,18 @@
                         @if($registros->hasMorePages())
                             <a
                                 href="{{ $registros->nextPageUrl() }}"
-                                class="pagination-button"
+                                class="audit-page-btn"
                             >
-                                Siguiente ›
+                                Siguiente
+                                <span class="audit-page-arrow">›</span>
                             </a>
                         @else
-                            <span class="pagination-button disabled">
-                                Siguiente ›
+                            <span class="audit-page-btn disabled">
+                                Siguiente
+                                <span class="audit-page-arrow">›</span>
                             </span>
                         @endif
-
-                    </div>
+                    </nav>
 
                 </div>
             </div>
