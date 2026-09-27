@@ -442,6 +442,11 @@ Route::middleware([
         )->name('reportes.index');
 
         Route::get(
+            '/reportes/imprimir',
+            [ReporteController::class, 'imprimir']
+        )->name('reportes.imprimir');
+
+        Route::get(
             '/perfil',
             [PerfilPromotorController::class, 'index']
         )->name('perfil.index');

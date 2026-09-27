@@ -1,503 +1,993 @@
 @extends('layouts.promotor')
 
+
+
 @section('title', 'Reportes')
+
 @section('module-title', 'Reportes')
 
-@section('content')
+
+
+@push('styles')
+
 <style>
-    .page-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 20px;
-        margin-bottom: 24px;
+
+    .report-grid{
+
+        display:grid;
+
+        grid-template-columns:repeat(4,minmax(0,1fr));
+
+        gap:14px;
+
+        margin-bottom:22px;
+
     }
 
-    .page-title h2 {
-        margin: 0;
-        color: #123d69;
-        font-size: 28px;
-        font-weight: 800;
+    .report-card{
+
+        display:block;
+
+        padding:17px;
+
+        border:1px solid #dfe7ee;
+
+        border-radius:16px;
+
+        background:#fff;
+
+        text-decoration:none;
+
+        transition:.2s ease;
+
     }
 
-    .page-title p {
-        margin: 7px 0 0;
-        color: #6b7c8d;
+    .report-card:hover{
+
+        transform:translateY(-2px);
+
+        border-color:#b9cfe4;
+
+        box-shadow:0 10px 24px rgba(21,68,112,.08);
+
     }
 
-    .filters-card {
-        margin-bottom: 22px;
-        padding: 18px;
-        border: 1px solid #dfe7ed;
-        border-radius: 16px;
-        background: #ffffff;
+    .report-card.active{
+
+        border-color:#164c96;
+
+        background:#f2f7fd;
+
+        box-shadow:inset 0 0 0 1px #164c96;
+
     }
 
-    .filters-grid {
-        display: grid;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
-        gap: 12px;
+    .report-card strong{
+
+        display:block;
+
+        color:#0a3158;
+
+        font-size:12px;
+
     }
 
-    .filter-group label {
-        display: block;
-        margin-bottom: 6px;
-        color: #66798a;
-        font-size: 12px;
-        font-weight: 800;
+    .report-card span{
+
+        display:block;
+
+        margin-top:6px;
+
+        color:#7b8b98;
+
+        font-size:9px;
+
+        line-height:1.45;
+
     }
 
-    .form-control {
-        width: 100%;
-        min-height: 42px;
-        padding: 0 12px;
-        border: 1px solid #ced9e1;
-        border-radius: 10px;
-        background: #ffffff;
-        color: #2f4659;
-        outline: none;
+    .filters-card,.results-card{
+
+        border:1px solid #e0e8ee;
+
+        border-radius:18px;
+
+        background:#fff;
+
+        box-shadow:0 8px 24px rgba(20,57,83,.05);
+
     }
 
-    .form-control:focus {
-        border-color: #2b72b8;
-        box-shadow: 0 0 0 3px rgba(43, 114, 184, .12);
+    .filters-card{padding:18px;margin-bottom:20px}
+
+    .filters-grid{
+
+        display:grid;
+
+        grid-template-columns:repeat(4,minmax(0,1fr));
+
+        gap:11px;
+
     }
 
-    .filters-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        margin-top: 14px;
+    .filters-grid + .filters-grid{margin-top:11px}
+
+    .form-control{
+
+        width:100%;
+
+        min-height:42px;
+
+        padding:0 12px;
+
+        border:1px solid #ced9e1;
+
+        border-radius:10px;
+
+        background:#fff;
+
+        color:#30485b;
+
+        box-sizing:border-box;
+
     }
 
-    .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 42px;
-        padding: 0 17px;
-        border: 0;
-        border-radius: 10px;
-        font-weight: 800;
-        text-decoration: none;
-        cursor: pointer;
+    .filters-actions{
+
+        display:flex;
+
+        justify-content:flex-end;
+
+        gap:10px;
+
+        margin-top:14px;
+
+        flex-wrap:wrap;
+
     }
 
-    .btn-primary {
-        background: #174f8a;
-        color: #ffffff;
+    .btn{
+
+        display:inline-flex;
+
+        align-items:center;
+
+        justify-content:center;
+
+        min-height:40px;
+
+        padding:0 15px;
+
+        border:0;
+
+        border-radius:10px;
+
+        font-size:10px;
+
+        font-weight:800;
+
+        text-decoration:none;
+
+        cursor:pointer;
+
     }
 
-    .btn-secondary {
-        background: #eef3f7;
-        color: #38556d;
+    .btn-primary{background:#164c96;color:#fff}
+
+    .btn-secondary{background:#edf2f5;color:#3d596f}
+
+    .btn-success{background:#16834f;color:#fff}
+
+    .metrics-grid{
+
+        display:grid;
+
+        grid-template-columns:repeat(6,minmax(0,1fr));
+
+        gap:12px;
+
+        margin-bottom:20px;
+
     }
 
-    .summary-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 14px;
-        margin-bottom: 22px;
+    .metric{
+
+        padding:15px;
+
+        border:1px solid #e1e8ed;
+
+        border-radius:14px;
+
+        background:#fff;
+
     }
 
-    .summary-card {
-        padding: 17px;
-        border: 1px solid #dfe7ed;
-        border-radius: 14px;
-        background: #ffffff;
+    .metric span{
+
+        display:block;
+
+        color:#758697;
+
+        font-size:8px;
+
+        font-weight:800;
+
+        text-transform:uppercase;
+
     }
 
-    .summary-card span {
-        display: block;
-        color: #718394;
-        font-size: 11px;
-        font-weight: 800;
-        text-transform: uppercase;
+    .metric strong{
+
+        display:block;
+
+        margin-top:7px;
+
+        color:#082d55;
+
+        font-size:19px;
+
     }
 
-    .summary-card strong {
-        display: block;
-        margin-top: 7px;
-        color: #173f66;
-        font-size: 22px;
-        font-weight: 800;
+    .results-header{
+
+        display:flex;
+
+        justify-content:space-between;
+
+        gap:20px;
+
+        align-items:center;
+
+        padding:18px 20px;
+
+        border-bottom:1px solid #edf1f4;
+
+        background:#fafcfd;
+
     }
 
-    .table-card {
-        overflow: hidden;
-        border: 1px solid #dfe7ed;
-        border-radius: 16px;
-        background: #ffffff;
+    .results-header h3{
+
+        margin:0;
+
+        color:#0a3158;
+
+        font-size:15px;
+
     }
 
-    .report-table {
-        width: 100%;
-        border-collapse: collapse;
+    .results-header p{
+
+        margin:5px 0 0;
+
+        color:#82909a;
+
+        font-size:10px;
+
     }
 
-    .report-table th,
-    .report-table td {
-        padding: 13px 14px;
-        border-bottom: 1px solid #edf1f4;
-        text-align: left;
-        vertical-align: middle;
+    .table-responsive{overflow-x:auto}
+
+    .report-table{
+
+        width:100%;
+
+        min-width:1050px;
+
+        border-collapse:collapse;
+
     }
 
-    .report-table th {
-        color: #627588;
-        background: #f7f9fb;
-        font-size: 11px;
-        text-transform: uppercase;
+    .report-table th,.report-table td{
+
+        padding:12px 13px;
+
+        border-bottom:1px solid #edf1f4;
+
+        text-align:left;
+
+        vertical-align:middle;
+
+        font-size:10px;
+
     }
 
-    .badge {
-        display: inline-flex;
-        align-items: center;
-        min-height: 25px;
-        padding: 0 9px;
-        border-radius: 999px;
-        background: #edf2f6;
-        color: #50667a;
-        font-size: 11px;
-        font-weight: 800;
-        text-transform: uppercase;
+    .report-table th{
+
+        background:#f7f9fb;
+
+        color:#687b8b;
+
+        font-size:8px;
+
+        text-transform:uppercase;
+
     }
 
-    .amount {
-        color: #173f66;
-        font-weight: 800;
-        white-space: nowrap;
+    .money-negative{color:#b33a34;font-weight:800}
+
+    .money-positive{color:#16834f;font-weight:800}
+
+    .money-zero{color:#607586;font-weight:800}
+
+    .pagination{padding:16px 18px}
+
+    @media(max-width:1200px){
+
+        .report-grid{grid-template-columns:repeat(3,1fr)}
+
+        .metrics-grid{grid-template-columns:repeat(3,1fr)}
+
+        .filters-grid{grid-template-columns:repeat(2,1fr)}
+
     }
 
-    .difference-positive {
-        color: #247048;
-        font-weight: 800;
+    @media(max-width:700px){
+
+        .report-grid,.metrics-grid,.filters-grid{grid-template-columns:1fr}
+
+        .filters-actions{flex-direction:column}
+
+        .btn{width:100%}
+
     }
 
-    .difference-negative {
-        color: #a93b35;
-        font-weight: 800;
-    }
-
-    .empty-state {
-        padding: 42px;
-        color: #758697;
-        text-align: center;
-    }
-
-    .pagination-wrapper {
-        padding: 16px;
-    }
-
-    @media (max-width: 1150px) {
-        .filters-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-
-        .summary-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .table-card {
-            overflow-x: auto;
-        }
-
-        .report-table {
-            min-width: 1100px;
-        }
-    }
-
-    @media (max-width: 700px) {
-        .filters-grid,
-        .summary-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .filters-actions {
-            flex-direction: column;
-        }
-    }
 </style>
 
+@endpush
+
+
+
+@section('content')
+
 <div class="page-header">
+
     <div class="page-title">
-        <h2>Reportes</h2>
+
+        <h2>Centro de Reportes</h2>
 
         <p>
-            Consulte los arqueos de sus rutas asignadas y filtre la
-            información por fecha, ruta, agente, tipo y estado.
+
+            Analice faltantes, sobrantes, exactitud, historiales
+
+            y comportamiento operativo por Agente, Promotor,
+
+            Ruta y Región.
+
         </p>
+
     </div>
+
 </div>
 
-<div class="filters-card">
-    <form
-        method="GET"
-        action="{{ route('promotor.reportes.index') }}"
-    >
+
+
+<div class="report-grid">
+
+    @php
+
+        $descripciones = [
+
+            'resumen' => 'Vista ejecutiva del período seleccionado.',
+
+            'faltantes' => 'Detalle de arqueos con diferencia negativa.',
+
+            'sobrantes' => 'Detalle de arqueos con diferencia positiva.',
+
+            'ranking-faltantes' => 'Agentes con mayor recurrencia de faltantes.',
+
+            'ranking-sobrantes' => 'Agentes con mayor recurrencia de sobrantes.',
+
+            'exactos' => 'Arqueos donde la diferencia fue exactamente cero.',
+
+            'historial-agente' => 'Historial completo filtrable por Agente.',
+
+            'historial-promotor' => 'Visitas y arqueos realizados por Promotor.',
+
+            'region-faltantes' => 'Regiones con mayor incidencia de faltantes.',
+
+            'region-sobrantes' => 'Regiones con mayor incidencia de sobrantes.',
+
+            'ruta-faltantes' => 'Rutas con mayor incidencia de faltantes.',
+
+            'ruta-sobrantes' => 'Rutas con mayor incidencia de sobrantes.',
+
+        ];
+
+    @endphp
+
+
+
+    @foreach($tiposReporte as $clave => $nombre)
+
+        <a
+
+            href="{{ route('promotor.reportes.index', array_merge(
+
+                request()->except('page'),
+
+                ['reporte' => $clave]
+
+            )) }}"
+
+            class="report-card {{ $reporte === $clave ? 'active' : '' }}"
+
+        >
+
+            <strong>{{ $nombre }}</strong>
+
+            <span>{{ $descripciones[$clave] }}</span>
+
+        </a>
+
+    @endforeach
+
+</div>
+
+
+
+<section class="filters-card">
+
+    <form method="GET" action="{{ route('promotor.reportes.index') }}">
+
+        <input type="hidden" name="reporte" value="{{ $reporte }}">
+
+
+
         <div class="filters-grid">
-            <div class="filter-group">
-                <label for="fecha_inicio">Fecha inicial</label>
 
-                <input
-                    type="date"
-                    id="fecha_inicio"
-                    name="fecha_inicio"
-                    class="form-control"
-                    value="{{ $fechaInicio }}"
-                >
-            </div>
+            <select name="agente_id" class="form-control">
 
-            <div class="filter-group">
-                <label for="fecha_fin">Fecha final</label>
+                <option value="">Todos los Agentes</option>
 
-                <input
-                    type="date"
-                    id="fecha_fin"
-                    name="fecha_fin"
-                    class="form-control"
-                    value="{{ $fechaFin }}"
-                >
-            </div>
-
-            <div class="filter-group">
-                <label for="ruta_id">Ruta</label>
-
-                <select
-                    id="ruta_id"
-                    name="ruta_id"
-                    class="form-control"
-                >
-                    <option value="">Todas las rutas</option>
-
-                    @foreach ($rutasAsignadas as $ruta)
-                        <option
-                            value="{{ $ruta->id }}"
-                            @selected($rutaId === (int) $ruta->id)
-                        >
-                            {{ $ruta->codigo }} — {{ $ruta->nombre }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label for="agente_id">Agente</label>
-
-                <select
-                    id="agente_id"
-                    name="agente_id"
-                    class="form-control"
-                >
-                    <option value="">Todos los agentes</option>
-
-                    @foreach ($agentesAsignados as $agente)
-                        <option
-                            value="{{ $agente->id }}"
-                            @selected($agenteId === (int) $agente->id)
-                        >
-                            {{ $agente->codigo_agente }}
-                            — {{ $agente->nombre_negocio }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label for="tipo">Tipo de arqueo</label>
-
-                <select
-                    id="tipo"
-                    name="tipo"
-                    class="form-control"
-                >
-                    <option value="">Todos los tipos</option>
+                @foreach($agentes as $agente)
 
                     <option
-                        value="DIARIO_AGENTE"
-                        @selected($tipo === 'DIARIO_AGENTE')
+
+                        value="{{ $agente->id }}"
+
+                        @selected($agente_id === (int) $agente->id)
+
                     >
-                        Arqueo del Agente
+
+                        {{ $agente->codigo_agente }}
+
+                        — {{ $agente->nombre_negocio }}
+
                     </option>
+
+                @endforeach
+
+            </select>
+
+
+
+            <select name="promotor_id" class="form-control">
+
+                <option value="">Todos los Promotores</option>
+
+                @foreach($promotores as $promotor)
+
+                    @php
+
+                        $nombrePromotor = trim(
+
+                            ($promotor->nombres ?? '')
+
+                            . ' '
+
+                            . ($promotor->apellidos ?? '')
+
+                        );
+
+                    @endphp
 
                     <option
-                        value="VISITA_PROMOTOR"
-                        @selected($tipo === 'VISITA_PROMOTOR')
+
+                        value="{{ $promotor->id }}"
+
+                        @selected($promotor_id === (int) $promotor->id)
+
                     >
-                        Arqueo del Promotor
+
+                        {{ $nombrePromotor !== ''
+
+                            ? $nombrePromotor
+
+                            : $promotor->usuario }}
+
                     </option>
-                </select>
-            </div>
 
-            <div class="filter-group">
-                <label for="estado">Estado</label>
+                @endforeach
 
-                <select
-                    id="estado"
-                    name="estado"
-                    class="form-control"
-                >
-                    <option value="">Todos los estados</option>
+            </select>
 
-                    @foreach ([
-                        'PENDIENTE_CERTIFICACION' => 'Pendiente',
-                        'CERTIFICADO' => 'Certificado',
-                        'ANULADO' => 'Anulado',
-                    ] as $valor => $texto)
-                        <option
-                            value="{{ $valor }}"
-                            @selected($estado === $valor)
-                        >
-                            {{ $texto }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+
+
+            <select name="region_id" class="form-control">
+
+                <option value="">Todas las Regiones</option>
+
+                @foreach($regiones as $region)
+
+                    <option
+
+                        value="{{ $region->id }}"
+
+                        @selected($region_id === (int) $region->id)
+
+                    >
+
+                        {{ $region->nombre }}
+
+                    </option>
+
+                @endforeach
+
+            </select>
+
+
+
+            <select name="ruta_id" class="form-control">
+
+                <option value="">Todas las Rutas</option>
+
+                @foreach($rutas as $ruta)
+
+                    <option
+
+                        value="{{ $ruta->id }}"
+
+                        @selected($ruta_id === (int) $ruta->id)
+
+                    >
+
+                        {{ $ruta->codigo }} — {{ $ruta->nombre }}
+
+                    </option>
+
+                @endforeach
+
+            </select>
+
         </div>
+
+
+
+        <div class="filters-grid">
+
+            <select name="tipo" class="form-control">
+
+                <option value="">Todos los tipos de arqueo</option>
+
+                <option
+
+                    value="DIARIO_AGENTE"
+
+                    @selected($tipo === 'DIARIO_AGENTE')
+
+                >
+
+                    Arqueo del Agente
+
+                </option>
+
+                <option
+
+                    value="VISITA_PROMOTOR"
+
+                    @selected($tipo === 'VISITA_PROMOTOR')
+
+                >
+
+                    Arqueo del Promotor
+
+                </option>
+
+            </select>
+
+
+
+            <input
+
+                type="date"
+
+                name="desde"
+
+                class="form-control"
+
+                value="{{ $desde }}"
+
+            >
+
+
+
+            <input
+
+                type="date"
+
+                name="hasta"
+
+                class="form-control"
+
+                value="{{ $hasta }}"
+
+            >
+
+
+
+            <select name="por_pagina" class="form-control">
+
+                @foreach([10,20,50,100] as $cantidad)
+
+                    <option
+
+                        value="{{ $cantidad }}"
+
+                        @selected($por_pagina === $cantidad)
+
+                    >
+
+                        {{ $cantidad }} resultados
+
+                    </option>
+
+                @endforeach
+
+            </select>
+
+        </div>
+
+
 
         <div class="filters-actions">
+
             <a
-                href="{{ route('promotor.reportes.index') }}"
+
+                href="{{ route(
+
+                    'promotor.reportes.index',
+
+                    ['reporte' => $reporte]
+
+                ) }}"
+
                 class="btn btn-secondary"
+
             >
-                Limpiar filtros
+
+                Limpiar Filtros
+
             </a>
 
+
+
+            <a
+
+                href="{{ route(
+
+                    'promotor.reportes.imprimir',
+
+                    request()->query()
+
+                ) }}"
+
+                target="_blank"
+
+                class="btn btn-success"
+
+            >
+
+                Imprimir PDF
+
+            </a>
+
+
+
             <button type="submit" class="btn btn-primary">
-                Generar reporte
+
+                Generar Reporte
+
             </button>
+
         </div>
+
     </form>
-</div>
 
-<div class="summary-grid">
-    <div class="summary-card">
-        <span>Total de arqueos</span>
-        <strong>{{ (int) $resumen->total_arqueos }}</strong>
-    </div>
-
-    <div class="summary-card">
-        <span>Arqueos de agentes</span>
-        <strong>{{ (int) $resumen->arqueos_agentes }}</strong>
-    </div>
-
-    <div class="summary-card">
-        <span>Arqueos del promotor</span>
-        <strong>{{ (int) $resumen->arqueos_promotor }}</strong>
-    </div>
-
-    <div class="summary-card">
-        <span>Certificados</span>
-        <strong>{{ (int) $resumen->certificados }}</strong>
-    </div>
-
-    <div class="summary-card">
-        <span>Pendientes</span>
-        <strong>{{ (int) $resumen->pendientes }}</strong>
-    </div>
-
-    <div class="summary-card">
-        <span>Anulados</span>
-        <strong>{{ (int) $resumen->anulados }}</strong>
-    </div>
+</section>
 
 
-</div>
 
-<div class="table-card">
-    <table class="report-table">
-        <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>Número</th>
-                <th>Agente</th>
-                <th>Ruta</th>
-                <th>Tipo</th>
-                <th>Estado</th>
-                <th>Total arqueado</th>
-                <th>Saldo sistema</th>
-                <th>Diferencia</th>
-            </tr>
-        </thead>
+@if(count($metricas))
 
-        <tbody>
-            @forelse ($arqueos as $arqueo)
-                <tr>
-                    <td>
-                        {{ \Carbon\Carbon::parse(
-                            $arqueo->fecha_arqueo
-                        )->format('d/m/Y') }}
-                    </td>
+    <section class="metrics-grid">
 
-                    <td>{{ $arqueo->numero_arqueo }}</td>
+        @foreach($metricas as $etiqueta => $valor)
 
-                    <td>
-                        {{ $arqueo->codigo_agente }}
-                        — {{ $arqueo->nombre_negocio }}
-                    </td>
+            <article class="metric">
 
-                    <td>
-                        {{ $arqueo->ruta_codigo }}
-                        — {{ $arqueo->ruta_nombre }}
-                    </td>
+                <span>{{ $etiqueta }}</span>
 
-                    <td>
-                        <span class="badge">
-                            {{ $arqueo->tipo === 'DIARIO_AGENTE'
-                                ? 'Agente'
-                                : 'Promotor' }}
-                        </span>
-                    </td>
+                <strong>{{ $valor }}</strong>
 
-                    <td>
-                        <span class="badge">
-                            {{ str_replace('_', ' ', $arqueo->estado) }}
-                        </span>
-                    </td>
+            </article>
 
-                    <td class="amount">
-                        Q {{ number_format(
-                            (float) $arqueo->total_arqueado,
-                            2
-                        ) }}
-                    </td>
+        @endforeach
 
-                    <td class="amount">
-                        Q {{ number_format(
-                            (float) $arqueo->saldo_sistema,
-                            2
-                        ) }}
-                    </td>
+    </section>
 
-                    <td class="{{ (float) $arqueo->diferencia > 0
-                        ? 'difference-positive'
-                        : ((float) $arqueo->diferencia < 0
-                            ? 'difference-negative'
-                            : '') }}"
-                    >
-                        Q {{ number_format(
-                            (float) $arqueo->diferencia,
-                            2
-                        ) }}
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="9">
-                        <div class="empty-state">
-                            No se encontraron arqueos para los filtros
-                            seleccionados.
-                        </div>
-                    </td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
+@endif
 
-    @if ($arqueos->hasPages())
-        <div class="pagination-wrapper">
-            {{ $arqueos->links() }}
+
+
+<section class="results-card">
+
+    <header class="results-header">
+
+        <div>
+
+            <h3>{{ $tiposReporte[$reporte] }}</h3>
+
+            <p>
+
+                Resultados correspondientes a los filtros aplicados.
+
+            </p>
+
         </div>
+
+    </header>
+
+
+
+    <div class="table-responsive">
+
+        <table class="report-table">
+
+            <thead>
+
+                <tr>
+
+                    @foreach($columnas as $columna => $titulo)
+
+                        <th>{{ $titulo }}</th>
+
+                    @endforeach
+
+                </tr>
+
+            </thead>
+
+
+
+            <tbody>
+
+                @forelse($resultados as $indice => $fila)
+
+                    <tr>
+
+                        @foreach($columnas as $columna => $titulo)
+
+                            <td>
+
+                                @switch($columna)
+
+                                    @case('posicion')
+
+                                        {{ method_exists($resultados, 'firstItem')
+
+                                            ? ($resultados->firstItem() + $indice)
+
+                                            : ($indice + 1) }}
+
+                                        @break
+
+
+
+                                    @case('agente')
+
+                                        <strong>
+
+                                            {{ $fila->codigo_agente }}
+
+                                            — {{ $fila->nombre_negocio }}
+
+                                        </strong>
+
+                                        @break
+
+
+
+                                    @case('ruta')
+
+                                        {{ $fila->ruta_codigo }}
+
+                                        — {{ $fila->ruta_nombre }}
+
+                                        @break
+
+
+
+                                    @case('responsable')
+
+                                        @php
+
+                                            $responsable = trim(
+
+                                                ($fila->responsable_nombres ?? '')
+
+                                                . ' '
+
+                                                . ($fila->responsable_apellidos ?? '')
+
+                                            );
+
+                                        @endphp
+
+                                        {{ $responsable !== ''
+
+                                            ? $responsable
+
+                                            : ($fila->responsable_usuario ?? '—') }}
+
+                                        @break
+
+
+
+                                    @case('fecha_arqueo')
+
+                                        {{ \Carbon\Carbon::parse(
+
+                                            $fila->fecha_arqueo
+
+                                        )->format('d/m/Y') }}
+
+                                        @break
+
+
+
+                                    @case('tipo')
+
+                                        {{ $fila->tipo === 'DIARIO_AGENTE'
+
+                                            ? 'Agente'
+
+                                            : ($fila->tipo === 'VISITA_PROMOTOR'
+
+                                                ? 'Promotor'
+
+                                                : str_replace('_',' ',$fila->tipo)) }}
+
+                                        @break
+
+
+
+                                    @case('estado')
+
+                                        {{ str_replace('_',' ',$fila->estado) }}
+
+                                        @break
+
+
+
+                                    @case('diferencia')
+
+                                        @php
+
+                                            $diferencia = (float) $fila->diferencia;
+
+                                            $clase = $diferencia < 0
+
+                                                ? 'money-negative'
+
+                                                : ($diferencia > 0
+
+                                                    ? 'money-positive'
+
+                                                    : 'money-zero');
+
+                                        @endphp
+
+                                        <span class="{{ $clase }}">
+
+                                            Q {{ number_format(
+
+                                                abs($diferencia),
+
+                                                2
+
+                                            ) }}
+
+                                            @if($diferencia < 0)
+
+                                                Faltante
+
+                                            @elseif($diferencia > 0)
+
+                                                Sobrante
+
+                                            @else
+
+                                                Exacto
+
+                                            @endif
+
+                                        </span>
+
+                                        @break
+
+
+
+                                    @case('saldo_sistema')
+
+                                    @case('total_arqueado')
+
+                                    @case('monto_acumulado')
+
+                                    @case('mayor_incidencia')
+
+                                        Q {{ number_format(
+
+                                            (float) $fila->{$columna},
+
+                                            2
+
+                                        ) }}
+
+                                        @break
+
+
+
+                                    @default
+
+                                        {{ $fila->{$columna} ?? '—' }}
+
+                                @endswitch
+
+                            </td>
+
+                        @endforeach
+
+                    </tr>
+
+                @empty
+
+                    <tr>
+
+                        <td
+
+                            colspan="{{ count($columnas) }}"
+
+                            style="padding:35px;text-align:center;"
+
+                        >
+
+                            No existen resultados para los filtros seleccionados.
+
+                        </td>
+
+                    </tr>
+
+                @endforelse
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+
+    @if(method_exists($resultados, 'hasPages') && $resultados->hasPages())
+
+        <div class="pagination">
+
+            {{ $resultados->links() }}
+
+        </div>
+
     @endif
-</div>
+
+</section>
+
 @endsection
