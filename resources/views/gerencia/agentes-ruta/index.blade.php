@@ -5,216 +5,299 @@
 
 @push('styles')
 <style>
-    .route-grid{
-        display:grid;
-        grid-template-columns:repeat(3,minmax(0,1fr));
-        gap:14px;
-        margin-bottom:20px;
+    .route-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 15px;
+        margin-bottom: 22px;
     }
 
     .route-card,
     .filters-card,
-    .table-card{
-        border:1px solid #e0e8ee;
-        border-radius:18px;
-        background:#fff;
-        box-shadow:0 8px 24px rgba(20,57,83,.05);
+    .table-card {
+        border: 1px solid #e0e8ee;
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow: 0 8px 24px rgba(20, 57, 83, .05);
     }
 
-    .route-card{
-        padding:17px;
+    .route-card {
+        padding: 17px;
     }
 
-    .route-card strong{
-        display:block;
-        color:#0a3158;
-        font-size:13px;
+    .route-card.active {
+        border-color: #b8d1e8;
+        background: #f7fbff;
     }
 
-    .route-card span{
-        display:block;
-        margin-top:5px;
-        color:#7b8b98;
-        font-size:9px;
+    .route-name {
+        margin-top: 5px;
+        color: #173b59;
+        font-size: 13px;
+        font-weight: 800;
     }
 
-    .route-metrics{
-        display:grid;
-        grid-template-columns:repeat(3,1fr);
-        gap:8px;
-        margin-top:14px;
+    .route-region {
+        margin-top: 4px;
+        color: #7b8993;
+        font-size: 10px;
     }
 
-    .route-metric{
-        padding:10px;
-        border-radius:10px;
-        background:#f7f9fb;
-        text-align:center;
+    .route-promoter {
+        margin-top: 12px;
+        padding-top: 11px;
+        border-top: 1px solid #edf1f4;
+        color: #607487;
+        font-size: 10px;
     }
 
-    .route-metric b{
-        display:block;
-        color:#082d55;
-        font-size:17px;
+    .route-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 13px;
     }
 
-    .route-metric small{
-        color:#758697;
-        font-size:7px;
-        font-weight:800;
-        text-transform:uppercase;
+    .route-stat {
+        padding: 10px;
+        border-radius: 10px;
+        background: #f5f8fa;
+        text-align: center;
     }
 
-    .filters-card{
-        padding:18px;
-        margin-bottom:20px;
+    .route-stat span {
+        display: block;
+        color: #7a8994;
+        font-size: 8px;
+        font-weight: 800;
+        text-transform: uppercase;
     }
 
-    .filters-grid{
-        display:grid;
-        grid-template-columns:minmax(250px,1fr) 220px 220px 180px;
-        gap:10px;
+    .route-stat strong {
+        display: block;
+        margin-top: 5px;
+        color: #082d55;
+        font-size: 18px;
     }
 
-    .form-control{
-        width:100%;
-        min-height:42px;
-        padding:0 12px;
-        border:1px solid #ced9e1;
-        border-radius:10px;
-        background:#fff;
-        color:#30485b;
-        box-sizing:border-box;
+    .filters-card {
+        margin-bottom: 20px;
+        padding: 18px;
     }
 
-    .filters-actions{
-        display:flex;
-        justify-content:flex-end;
-        gap:10px;
-        margin-top:13px;
+    .filters-grid {
+        display: grid;
+        grid-template-columns: minmax(230px, 1fr) 190px 220px 160px;
+        gap: 11px;
     }
 
-    .btn{
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        min-height:40px;
-        padding:0 15px;
-        border:0;
-        border-radius:10px;
-        font-size:10px;
-        font-weight:800;
-        text-decoration:none;
-        cursor:pointer;
+    .form-control {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 12px;
+        border: 1px solid #ced9e1;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #30485b;
+        outline: none;
+        box-sizing: border-box;
     }
 
-    .btn-primary{background:#164c96;color:#fff}
-    .btn-secondary{background:#edf2f5;color:#3d596f}
-
-    .table-card{
-        overflow:hidden;
+    .form-control:focus {
+        border-color: #82a9cc;
+        box-shadow: 0 0 0 3px rgba(22, 76, 150, .08);
     }
 
-    .table-header{
-        padding:18px 20px;
-        border-bottom:1px solid #edf1f4;
-        background:#fafcfd;
+    .filters-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 13px;
     }
 
-    .table-header h3{
-        margin:0;
-        color:#0a3158;
-        font-size:15px;
+    .btn,
+    .action-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-weight: 800;
     }
 
-    .table-header p{
-        margin:5px 0 0;
-        color:#82909a;
-        font-size:10px;
+    .btn {
+        min-height: 40px;
+        padding: 0 15px;
+        border: 0;
+        border-radius: 10px;
+        font-size: 10px;
+        cursor: pointer;
     }
 
-    .table-responsive{overflow-x:auto}
-
-    table{
-        width:100%;
-        min-width:1200px;
-        border-collapse:collapse;
+    .btn-primary {
+        background: #164c96;
+        color: #ffffff;
     }
 
-    th,
-    td{
-        padding:12px 13px;
-        border-bottom:1px solid #edf1f4;
-        text-align:left;
-        vertical-align:middle;
-        font-size:10px;
+    .btn-secondary {
+        background: #edf2f5;
+        color: #3d596f;
     }
 
-    th{
-        background:#f7f9fb;
-        color:#687b8b;
-        font-size:8px;
-        text-transform:uppercase;
+    .selected-route {
+        margin-bottom: 18px;
+        padding: 16px 18px;
+        border: 1px solid #cbdff1;
+        border-radius: 14px;
+        background: #f7fbff;
     }
 
-    .badge{
-        display:inline-flex;
-        padding:6px 9px;
-        border-radius:999px;
-        font-size:8px;
-        font-weight:800;
-        text-transform:uppercase;
+    .selected-route strong {
+        color: #0a3158;
+        font-size: 13px;
     }
 
-    .badge.active{
-        background:#eaf8ef;
-        color:#1d7b4e;
+    .selected-route span {
+        display: block;
+        margin-top: 4px;
+        color: #6f808d;
+        font-size: 10px;
     }
 
-    .badge.inactive{
-        background:#fdecec;
-        color:#b13c3c;
+    .table-card {
+        overflow: hidden;
     }
 
-    .action-link{
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        min-height:34px;
-        padding:0 10px;
-        border:1px solid #d6e0e6;
-        border-radius:9px;
-        background:#fff;
-        color:#31536e;
-        font-size:9px;
-        font-weight:800;
-        text-decoration:none;
+    .table-header {
+        padding: 18px 20px;
+        border-bottom: 1px solid #edf1f4;
+        background: #fafcfd;
     }
 
-    .pagination{padding:16px 18px}
-
-    @media(max-width:1100px){
-        .route-grid{
-            grid-template-columns:1fr 1fr;
-        }
-
-        .filters-grid{
-            grid-template-columns:1fr 1fr;
-        }
+    .table-header h3 {
+        margin: 0;
+        color: #0a3158;
+        font-size: 15px;
     }
 
-    @media(max-width:700px){
+    .table-header p {
+        margin: 5px 0 0;
+        color: #82909a;
+        font-size: 10px;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .agents-table {
+        width: 100%;
+        min-width: 1180px;
+        border-collapse: collapse;
+    }
+
+    .agents-table th,
+    .agents-table td {
+        padding: 12px 13px;
+        border-bottom: 1px solid #edf1f4;
+        text-align: left;
+        vertical-align: middle;
+        font-size: 10px;
+    }
+
+    .agents-table th {
+        background: #f7f9fb;
+        color: #687b8b;
+        font-size: 8px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .agents-table tbody tr:hover {
+        background: #fbfdfe;
+    }
+
+    .badge {
+        display: inline-flex;
+        padding: 6px 9px;
+        border-radius: 999px;
+        font-size: 8px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .badge.active {
+        background: #eaf8ef;
+        color: #1d7b4e;
+    }
+
+    .badge.inactive {
+        background: #fdecec;
+        color: #b13c3c;
+    }
+
+    .today-ok {
+        color: #1d7b4e;
+        font-weight: 800;
+    }
+
+    .today-pending {
+        color: #9c7014;
+        font-weight: 800;
+    }
+
+    .actions {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+    }
+
+    .action-link {
+        min-height: 34px;
+        padding: 0 10px;
+        border: 1px solid #d5dfe5;
+        border-radius: 9px;
+        background: #ffffff;
+        color: #31536e;
+        font-size: 9px;
+        white-space: nowrap;
+    }
+
+    .action-link.primary {
+        border-color: #cbdceb;
+        background: #edf5fb;
+        color: #164c96;
+    }
+
+    .empty-state {
+        padding: 44px 20px;
+        color: #7d8b95;
+        text-align: center;
+        font-size: 11px;
+    }
+
+    .pagination {
+        padding: 16px 18px;
+    }
+
+    @media (max-width: 1100px) {
         .route-grid,
-        .filters-grid{
-            grid-template-columns:1fr;
+        .filters-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 700px) {
+        .route-grid,
+        .filters-grid {
+            grid-template-columns: 1fr;
         }
 
-        .filters-actions{
-            flex-direction:column;
+        .filters-actions {
+            flex-direction: column;
         }
 
-        .btn{
-            width:100%;
+        .btn {
+            width: 100%;
         }
     }
 </style>
@@ -227,53 +310,73 @@
 
         <p>
             Consulte la distribución de Agentes por Ruta,
-            su Promotor asignado y el cumplimiento del día.
+            su Promotor asignado y el cumplimiento del arqueo diario.
         </p>
     </div>
 </div>
 
-@if($resumenRutas->count())
+@if ($resumenRutas->isNotEmpty())
     <section class="route-grid">
-        @foreach($resumenRutas as $ruta)
+        @foreach ($resumenRutas as $ruta)
             @php
                 $nombrePromotor = trim(
                     ($ruta->promotor_nombres ?? '')
                     . ' '
                     . ($ruta->promotor_apellidos ?? '')
                 );
+
+                $pendientesRuta = max(
+                    0,
+                    (int) $ruta->agentes_activos
+                    - (int) $ruta->agentes_con_arqueo_hoy
+                );
             @endphp
 
-            <article class="route-card">
-                <strong>
+            <article class="route-card {{ $rutaId === (int) $ruta->id ? 'active' : '' }}">
+                <div class="route-name">
                     {{ $ruta->codigo }} — {{ $ruta->nombre }}
-                </strong>
+                </div>
 
-                <span>
+                <div class="route-region">
                     {{ $ruta->region_nombre }}
-                </span>
+                </div>
 
-                <span>
+                <div class="route-promoter">
                     Promotor:
-                    {{ $nombrePromotor !== ''
-                        ? $nombrePromotor
-                        : ($ruta->promotor_usuario ?? 'Sin asignación') }}
-                </span>
+                    <strong>
+                        {{ $nombrePromotor !== ''
+                            ? $nombrePromotor
+                            : ($ruta->promotor_usuario ?? 'Sin asignación') }}
+                    </strong>
+                </div>
 
-                <div class="route-metrics">
-                    <div class="route-metric">
-                        <b>{{ (int) $ruta->total_agentes }}</b>
-                        <small>Total</small>
+                <div class="route-stats">
+                    <div class="route-stat">
+                        <span>Activos</span>
+                        <strong>{{ (int) $ruta->agentes_activos }}</strong>
                     </div>
 
-                    <div class="route-metric">
-                        <b>{{ (int) $ruta->agentes_activos }}</b>
-                        <small>Activos</small>
+                    <div class="route-stat">
+                        <span>Arqueados hoy</span>
+                        <strong>{{ (int) $ruta->agentes_con_arqueo_hoy }}</strong>
                     </div>
 
-                    <div class="route-metric">
-                        <b>{{ (int) $ruta->agentes_con_arqueo_hoy }}</b>
-                        <small>Arqueados hoy</small>
+                    <div class="route-stat">
+                        <span>Pendientes</span>
+                        <strong>{{ $pendientesRuta }}</strong>
                     </div>
+                </div>
+
+                <div style="margin-top:13px;">
+                    <a
+                        href="{{ route(
+                            'gerencia.agentes-ruta.index',
+                            ['ruta_id' => $ruta->id]
+                        ) }}"
+                        class="action-link primary"
+                    >
+                        Ver agentes
+                    </a>
                 </div>
             </article>
         @endforeach
@@ -283,9 +386,7 @@
 <section class="filters-card">
     <form
         method="GET"
-        action="{{ route(
-            'gerencia.agentes-ruta.index'
-        ) }}"
+        action="{{ route('gerencia.agentes-ruta.index') }}"
     >
         <div class="filters-grid">
             <input
@@ -293,7 +394,7 @@
                 name="buscar"
                 class="form-control"
                 value="{{ $buscar }}"
-                placeholder="Código, negocio, propietario, ruta o región"
+                placeholder="Código, negocio o propietario"
             >
 
             <select
@@ -301,15 +402,13 @@
                 class="form-control"
             >
                 <option value="">
-                    Todas las Regiones
+                    Todas las regiones
                 </option>
 
                 @foreach($regiones as $region)
                     <option
                         value="{{ $region->id }}"
-                        @selected(
-                            $regionId === (int) $region->id
-                        )
+                        @selected($regionId === (int) $region->id)
                     >
                         {{ $region->nombre }}
                     </option>
@@ -321,18 +420,15 @@
                 class="form-control"
             >
                 <option value="">
-                    Todas las Rutas
+                    Todas las rutas
                 </option>
 
                 @foreach($rutas as $ruta)
                     <option
                         value="{{ $ruta->id }}"
-                        @selected(
-                            $rutaId === (int) $ruta->id
-                        )
+                        @selected($rutaId === (int) $ruta->id)
                     >
-                        {{ $ruta->codigo }}
-                        — {{ $ruta->nombre }}
+                        {{ $ruta->codigo }} — {{ $ruta->nombre }}
                     </option>
                 @endforeach
             </select>
@@ -363,9 +459,7 @@
 
         <div class="filters-actions">
             <a
-                href="{{ route(
-                    'gerencia.agentes-ruta.index'
-                ) }}"
+                href="{{ route('gerencia.agentes-ruta.index') }}"
                 class="btn btn-secondary"
             >
                 Limpiar
@@ -381,6 +475,19 @@
     </form>
 </section>
 
+@if ($rutaSeleccionada)
+    <div class="selected-route">
+        <strong>
+            {{ $rutaSeleccionada->codigo }}
+            — {{ $rutaSeleccionada->nombre }}
+        </strong>
+
+        <span>
+            Región: {{ $rutaSeleccionada->region_nombre }}
+        </span>
+    </div>
+@endif
+
 <section class="table-card">
     <header class="table-header">
         <h3>
@@ -393,120 +500,131 @@
         </h3>
 
         <p>
-            Información de consulta para Gerencia.
+            Información de consulta para Gerencia según los filtros seleccionados.
         </p>
     </header>
 
     <div class="table-responsive">
-        <table>
-            <thead>
-                <tr>
-                    <th>Agente</th>
-                    <th>Propietario</th>
-                    <th>Región</th>
-                    <th>Ruta</th>
-                    <th>Promotor</th>
-                    <th>Estado</th>
-                    <th>Último Arqueo</th>
-                    <th>Hoy</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                @forelse($agentes as $agente)
-                    @php
-                        $nombrePromotor = trim(
-                            ($agente->promotor_nombres ?? '')
-                            . ' '
-                            . ($agente->promotor_apellidos ?? '')
-                        );
-                    @endphp
-
+        @if ($agentes->isEmpty())
+            <div class="empty-state">
+                No se encontraron Agentes para los filtros seleccionados.
+            </div>
+        @else
+            <table class="agents-table">
+                <thead>
                     <tr>
-                        <td>
-                            <strong>
-                                {{ $agente->codigo_agente }}
-                                — {{ $agente->nombre_negocio }}
-                            </strong>
-                        </td>
+                        <th>Código</th>
+                        <th>Negocio</th>
+                        <th>Propietario</th>
+                        <th>Región</th>
+                        <th>Ruta</th>
+                        <th>Promotor</th>
+                        <th>Estado</th>
+                        <th>Arqueo hoy</th>
+                        <th>Último arqueo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
 
-                        <td>
-                            {{ $agente->nombre_propietario }}
-                        </td>
+                <tbody>
+                    @foreach ($agentes as $agente)
+                        @php
+                            $nombrePromotor = trim(
+                                ($agente->promotor_nombres ?? '')
+                                . ' '
+                                . ($agente->promotor_apellidos ?? '')
+                            );
+                        @endphp
 
-                        <td>
-                            {{ $agente->region_nombre }}
-                        </td>
+                        <tr>
+                            <td>
+                                <strong>{{ $agente->codigo_agente }}</strong>
+                            </td>
 
-                        <td>
-                            {{ $agente->ruta_codigo }}
-                            — {{ $agente->ruta_nombre }}
-                        </td>
+                            <td>
+                                {{ $agente->nombre_negocio }}
+                            </td>
 
-                        <td>
-                            {{ $nombrePromotor !== ''
-                                ? $nombrePromotor
-                                : (
-                                    $agente->promotor_usuario
-                                    ?? 'Sin asignación'
-                                ) }}
-                        </td>
+                            <td>
+                                {{ $agente->nombre_propietario }}
+                            </td>
 
-                        <td>
-                            <span
-                                class="badge {{
+                            <td>
+                                {{ $agente->region_nombre }}
+                            </td>
+
+                            <td>
+                                {{ $agente->ruta_codigo }}
+                                — {{ $agente->ruta_nombre }}
+                            </td>
+
+                            <td>
+                                {{ $nombrePromotor !== ''
+                                    ? $nombrePromotor
+                                    : ($agente->promotor_usuario ?? 'Sin asignación') }}
+                            </td>
+
+                            <td>
+                                <span class="badge {{
                                     $agente->estado === 'ACTIVO'
                                         ? 'active'
                                         : 'inactive'
-                                }}"
-                            >
-                                {{ $agente->estado }}
-                            </span>
-                        </td>
+                                }}">
+                                    {{ $agente->estado }}
+                                </span>
+                            </td>
 
-                        <td>
-                            {{ $agente->ultimo_arqueo
-                                ? \Carbon\Carbon::parse(
-                                    $agente->ultimo_arqueo
-                                )->format('d/m/Y')
-                                : '—' }}
-                        </td>
+                            <td>
+                                @if ((int) $agente->arqueo_hoy > 0)
+                                    <span class="today-ok">
+                                        Realizado
+                                    </span>
+                                @else
+                                    <span class="today-pending">
+                                        Pendiente
+                                    </span>
+                                @endif
+                            </td>
 
-                        <td>
-                            {{ (int) $agente->arqueo_hoy > 0
-                                ? 'Realizado'
-                                : 'Pendiente' }}
-                        </td>
+                            <td>
+                                {{ $agente->ultimo_arqueo
+                                    ? \Carbon\Carbon::parse(
+                                        $agente->ultimo_arqueo
+                                    )->format('d/m/Y')
+                                    : 'Sin arqueos' }}
+                            </td>
 
-                        <td>
-                            <a
-                                href="{{ route(
-                                    'gerencia.agentes.show',
-                                    $agente->id
-                                ) }}"
-                                class="action-link"
-                            >
-                                Ver detalle
-                            </a>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td
-                            colspan="9"
-                            style="padding:35px;text-align:center;"
-                        >
-                            No se encontraron Agentes
-                            para los filtros seleccionados.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+                            <td>
+                                <div class="actions">
+                                    <a
+                                        href="{{ route(
+                                            'gerencia.agentes.show',
+                                            $agente->id
+                                        ) }}"
+                                        class="action-link primary"
+                                    >
+                                        Ver agente
+                                    </a>
+
+                                    <a
+                                        href="{{ route(
+                                            'gerencia.arqueos-agentes.index',
+                                            ['agente_id' => $agente->id]
+                                        ) }}"
+                                        class="action-link"
+                                    >
+                                        Ver arqueos
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
     </div>
 
-    @if($agentes->hasPages())
+    @if ($agentes->hasPages())
         <div class="pagination">
             {{ $agentes->links() }}
         </div>

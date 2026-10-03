@@ -3,122 +3,616 @@
 @section('title', 'Arqueos por Agente')
 @section('module-title', 'Arqueos por Agente')
 
+@push('styles')
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        padding: 16px;
+        border: 1px solid #e0e8ee;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: 0 8px 24px rgba(20, 57, 83, .05);
+    }
+
+    .stat-card.success {
+        border-color: #c5e5d1;
+        background: #f7fcf9;
+    }
+
+    .stat-card.warning {
+        border-color: #efd99f;
+        background: #fffdf6;
+    }
+
+    .stat-card.danger {
+        border-color: #efc5c5;
+        background: #fffafa;
+    }
+
+    .stat-card span {
+        display: block;
+        color: #758697;
+        font-size: 8px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .stat-card strong {
+        display: block;
+        margin-top: 7px;
+        color: #082d55;
+        font-size: 22px;
+    }
+
+    .filters-card,
+    .table-card {
+        overflow: hidden;
+        border: 1px solid #e0e8ee;
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow: 0 8px 24px rgba(20, 57, 83, .05);
+    }
+
+    .filters-card {
+        margin-bottom: 20px;
+        padding: 18px;
+    }
+
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .filters-grid.secondary {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-top: 10px;
+    }
+
+    .form-control {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 12px;
+        border: 1px solid #ced9e1;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #30485b;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+    .form-control:focus {
+        border-color: #82a9cc;
+        box-shadow: 0 0 0 3px rgba(22, 76, 150, .08);
+    }
+
+    .filters-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 0 15px;
+        border: 0;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background: #164c96;
+        color: #ffffff;
+    }
+
+    .btn-secondary {
+        background: #edf2f5;
+        color: #3d596f;
+    }
+
+    .table-header {
+        padding: 18px 20px;
+        border-bottom: 1px solid #edf1f4;
+        background: #fafcfd;
+    }
+
+    .table-header h3 {
+        margin: 0;
+        color: #0a3158;
+        font-size: 15px;
+    }
+
+    .table-header p {
+        margin: 5px 0 0;
+        color: #82909a;
+        font-size: 10px;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .arqueos-table {
+        width: 100%;
+        min-width: 1250px;
+        border-collapse: collapse;
+    }
+
+    .arqueos-table th,
+    .arqueos-table td {
+        padding: 12px 13px;
+        border-bottom: 1px solid #edf1f4;
+        text-align: left;
+        vertical-align: middle;
+        font-size: 10px;
+    }
+
+    .arqueos-table th {
+        background: #f7f9fb;
+        color: #687b8b;
+        font-size: 8px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .arqueos-table tbody tr:hover {
+        background: #fbfdfe;
+    }
+
+    .badge {
+        display: inline-flex;
+        padding: 6px 9px;
+        border-radius: 999px;
+        background: #edf2f6;
+        color: #50667a;
+        font-size: 8px;
+        font-weight: 800;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .diff-negative {
+        color: #b33a34;
+        font-weight: 800;
+    }
+
+    .diff-positive {
+        color: #16834f;
+        font-weight: 800;
+    }
+
+    .diff-zero {
+        color: #607586;
+        font-weight: 800;
+    }
+
+    .actions-cell {
+        white-space: nowrap;
+    }
+
+    .table-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid #d5dfe5;
+        border-radius: 9px;
+        background: #ffffff;
+        color: #31536e;
+        text-decoration: none;
+        transition: .2s ease;
+    }
+
+    .icon-button:hover {
+        transform: translateY(-1px);
+        border-color: #9db6c9;
+        background: #f4f8fb;
+        color: #164c96;
+        box-shadow: 0 6px 14px rgba(24, 66, 99, .10);
+    }
+
+    .icon-button.print {
+        border-color: #c8d7e3;
+        background: #edf5fb;
+        color: #164c96;
+    }
+
+    .icon-button svg {
+        width: 17px;
+        height: 17px;
+        stroke: currentColor;
+        stroke-width: 1.9;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .empty-state {
+        padding: 44px 20px;
+        color: #7d8b95;
+        text-align: center;
+        font-size: 11px;
+    }
+
+    .pagination {
+        padding: 16px 18px;
+    }
+
+    @media (max-width: 1200px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .filters-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .filters-grid.secondary {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 700px) {
+        .stats-grid,
+        .filters-grid,
+        .filters-grid.secondary {
+            grid-template-columns: 1fr;
+        }
+
+        .filters-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="page-header">
     <div class="page-title">
         <h2>Arqueos por Agente</h2>
+
         <p>
             Consulte el historial de arqueos diarios realizados por los Agentes.
         </p>
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
-    <div style="padding:16px;border:1px solid #e0e8ee;border-radius:16px;background:#fff;">
-        <span style="font-size:8px;font-weight:800;text-transform:uppercase;color:#758697;">Total</span>
-        <strong style="display:block;margin-top:7px;font-size:22px;color:#082d55;">{{ $total }}</strong>
+<div class="stats-grid">
+    <div class="stat-card">
+        <span>Total</span>
+        <strong>{{ $total }}</strong>
     </div>
-    <div style="padding:16px;border:1px solid #c5e5d1;border-radius:16px;background:#f7fcf9;">
-        <span style="font-size:8px;font-weight:800;text-transform:uppercase;color:#758697;">Certificados</span>
-        <strong style="display:block;margin-top:7px;font-size:22px;color:#082d55;">{{ $certificados }}</strong>
+
+    <div class="stat-card success">
+        <span>Certificados</span>
+        <strong>{{ $certificados }}</strong>
     </div>
-    <div style="padding:16px;border:1px solid #efd99f;border-radius:16px;background:#fffdf6;">
-        <span style="font-size:8px;font-weight:800;text-transform:uppercase;color:#758697;">Pendientes</span>
-        <strong style="display:block;margin-top:7px;font-size:22px;color:#082d55;">{{ $pendientes }}</strong>
+
+    <div class="stat-card warning">
+        <span>Pendientes</span>
+        <strong>{{ $pendientes }}</strong>
     </div>
-    <div style="padding:16px;border:1px solid #efc5c5;border-radius:16px;background:#fffafa;">
-        <span style="font-size:8px;font-weight:800;text-transform:uppercase;color:#758697;">Anulados</span>
-        <strong style="display:block;margin-top:7px;font-size:22px;color:#082d55;">{{ $anulados }}</strong>
+
+    <div class="stat-card danger">
+        <span>Anulados</span>
+        <strong>{{ $anulados }}</strong>
     </div>
 </div>
 
-<form method="GET" action="{{ route('gerencia.arqueos-agentes.index') }}" style="padding:18px;border:1px solid #e0e8ee;border-radius:18px;background:#fff;margin-bottom:20px;">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
-        <input type="text" name="buscar" value="{{ $buscar }}" placeholder="Número, Agente, negocio, ruta o región" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
-        <select name="agente_id" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
-            <option value="">Todos los Agentes</option>
-            @foreach($agentes as $agente)
-                <option value="{{ $agente->id }}" @selected($agenteId === (int)$agente->id)>
-                    {{ $agente->codigo_agente }} — {{ $agente->nombre_negocio }}
+<section class="filters-card">
+    <form
+        method="GET"
+        action="{{ route('gerencia.arqueos-agentes.index') }}"
+    >
+        <div class="filters-grid">
+            <input
+                type="text"
+                name="buscar"
+                class="form-control"
+                value="{{ $buscar }}"
+                placeholder="Número, Agente, negocio, ruta o región"
+            >
+
+            <select
+                name="agente_id"
+                class="form-control"
+            >
+                <option value="">Todos los Agentes</option>
+
+                @foreach($agentes as $agente)
+                    <option
+                        value="{{ $agente->id }}"
+                        @selected($agenteId === (int)$agente->id)
+                    >
+                        {{ $agente->codigo_agente }}
+                        — {{ $agente->nombre_negocio }}
+                    </option>
+                @endforeach
+            </select>
+
+            <select
+                name="region_id"
+                class="form-control"
+            >
+                <option value="">Todas las Regiones</option>
+
+                @foreach($regiones as $region)
+                    <option
+                        value="{{ $region->id }}"
+                        @selected($regionId === (int)$region->id)
+                    >
+                        {{ $region->nombre }}
+                    </option>
+                @endforeach
+            </select>
+
+            <select
+                name="ruta_id"
+                class="form-control"
+            >
+                <option value="">Todas las Rutas</option>
+
+                @foreach($rutas as $ruta)
+                    <option
+                        value="{{ $ruta->id }}"
+                        @selected($rutaId === (int)$ruta->id)
+                    >
+                        {{ $ruta->codigo }} — {{ $ruta->nombre }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="filters-grid secondary">
+            <select
+                name="estado"
+                class="form-control"
+            >
+                <option value="">Todos los estados</option>
+
+                <option
+                    value="PENDIENTE_CERTIFICACION"
+                    @selected($estado==='PENDIENTE_CERTIFICACION')
+                >
+                    Pendiente certificación
                 </option>
-            @endforeach
-        </select>
-        <select name="region_id" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
-            <option value="">Todas las Regiones</option>
-            @foreach($regiones as $region)
-                <option value="{{ $region->id }}" @selected($regionId === (int)$region->id)>{{ $region->nombre }}</option>
-            @endforeach
-        </select>
-        <select name="ruta_id" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
-            <option value="">Todas las Rutas</option>
-            @foreach($rutas as $ruta)
-                <option value="{{ $ruta->id }}" @selected($rutaId === (int)$ruta->id)>{{ $ruta->codigo }} — {{ $ruta->nombre }}</option>
-            @endforeach
-        </select>
-    </div>
 
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;">
-        <select name="estado" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
-            <option value="">Todos los estados</option>
-            <option value="PENDIENTE_CERTIFICACION" @selected($estado==='PENDIENTE_CERTIFICACION')>Pendiente certificación</option>
-            <option value="CERTIFICADO" @selected($estado==='CERTIFICADO')>Certificado</option>
-            <option value="ANULADO" @selected($estado==='ANULADO')>Anulado</option>
-        </select>
-        <input type="date" name="desde" value="{{ $desde }}" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
-        <input type="date" name="hasta" value="{{ $hasta }}" style="min-height:42px;padding:0 12px;border:1px solid #ced9e1;border-radius:10px;">
-    </div>
+                <option
+                    value="CERTIFICADO"
+                    @selected($estado==='CERTIFICADO')
+                >
+                    Certificado
+                </option>
 
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px;">
-        <a href="{{ route('gerencia.arqueos-agentes.index') }}" style="padding:10px 14px;border-radius:10px;background:#edf2f5;color:#3d596f;font-size:10px;font-weight:800;text-decoration:none;">Limpiar</a>
-        <button type="submit" style="padding:10px 14px;border:0;border-radius:10px;background:#164c96;color:#fff;font-size:10px;font-weight:800;">Aplicar filtros</button>
-    </div>
-</form>
+                <option
+                    value="ANULADO"
+                    @selected($estado==='ANULADO')
+                >
+                    Anulado
+                </option>
+            </select>
 
-<div style="overflow:hidden;border:1px solid #e0e8ee;border-radius:18px;background:#fff;">
-    <div style="overflow-x:auto;">
-        <table style="width:100%;min-width:1250px;border-collapse:collapse;">
-            <thead>
-                <tr style="background:#f7f9fb;">
-                    <th style="padding:12px;">Número</th>
-                    <th style="padding:12px;">Fecha</th>
-                    <th style="padding:12px;">Agente</th>
-                    <th style="padding:12px;">Región</th>
-                    <th style="padding:12px;">Ruta</th>
-                    <th style="padding:12px;">Estado</th>
-                    <th style="padding:12px;">Diferencia</th>
-                    <th style="padding:12px;">Extemporáneo</th>
-                    <th style="padding:12px;">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($arqueos as $arqueo)
-                    <tr style="border-top:1px solid #edf1f4;">
-                        <td style="padding:12px;"><strong>{{ $arqueo->numero_arqueo }}</strong></td>
-                        <td style="padding:12px;">{{ \Carbon\Carbon::parse($arqueo->fecha_arqueo)->format('d/m/Y') }}</td>
-                        <td style="padding:12px;">{{ $arqueo->codigo_agente }} — {{ $arqueo->nombre_negocio }}</td>
-                        <td style="padding:12px;">{{ $arqueo->region_nombre ?? '—' }}</td>
-                        <td style="padding:12px;">{{ $arqueo->ruta_codigo }} — {{ $arqueo->ruta_nombre }}</td>
-                        <td style="padding:12px;">{{ str_replace('_',' ',$arqueo->estado) }}</td>
-                        <td style="padding:12px;">
-                            @php $d=(float)$arqueo->diferencia; @endphp
-                            Q {{ number_format(abs($d),2) }}
-                            @if($d<0) Faltante @elseif($d>0) Sobrante @else Exacto @endif
-                        </td>
-                        <td style="padding:12px;">{{ $arqueo->fuera_fecha_ordinaria ? 'Sí' : 'No' }}</td>
-                        <td style="padding:12px;white-space:nowrap;">
-                            <a href="{{ route('gerencia.arqueos-agentes.show',$arqueo->id) }}" style="padding:8px 10px;border-radius:8px;background:#edf2f5;color:#31536e;text-decoration:none;font-size:9px;font-weight:800;">Ver</a>
-                            <a href="{{ route('gerencia.arqueos-agentes.imprimir',$arqueo->id) }}" target="_blank" style="padding:8px 10px;border-radius:8px;background:#164c96;color:#fff;text-decoration:none;font-size:9px;font-weight:800;">Imprimir</a>
-                        </td>
+            <input
+                type="date"
+                name="desde"
+                class="form-control"
+                value="{{ $desde }}"
+            >
+
+            <input
+                type="date"
+                name="hasta"
+                class="form-control"
+                value="{{ $hasta }}"
+            >
+        </div>
+
+        <div class="filters-actions">
+            <a
+                href="{{ route('gerencia.arqueos-agentes.index') }}"
+                class="btn btn-secondary"
+            >
+                Limpiar
+            </a>
+
+            <button
+                type="submit"
+                class="btn btn-primary"
+            >
+                Aplicar filtros
+            </button>
+        </div>
+    </form>
+</section>
+
+<section class="table-card">
+    <header class="table-header">
+        <h3>Historial de arqueos</h3>
+
+        <p>
+            Resultados ordenados del más reciente al más antiguo.
+        </p>
+    </header>
+
+    <div class="table-responsive">
+        @if($arqueos->isEmpty())
+            <div class="empty-state">
+                No se encontraron arqueos.
+            </div>
+        @else
+            <table class="arqueos-table">
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Fecha</th>
+                        <th>Agente</th>
+                        <th>Región</th>
+                        <th>Ruta</th>
+                        <th>Estado</th>
+                        <th>Diferencia</th>
+                        <th>Extemporáneo</th>
+                        <th>Acciones</th>
                     </tr>
-                @empty
-                    <tr><td colspan="9" style="padding:35px;text-align:center;">No se encontraron arqueos.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+
+                <tbody>
+                    @foreach($arqueos as $arqueo)
+                        <tr>
+                            <td>
+                                <strong>
+                                    {{ $arqueo->numero_arqueo }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ \Carbon\Carbon::parse(
+                                    $arqueo->fecha_arqueo
+                                )->format('d/m/Y') }}
+                            </td>
+
+                            <td>
+                                {{ $arqueo->codigo_agente }}
+                                — {{ $arqueo->nombre_negocio }}
+                            </td>
+
+                            <td>
+                                {{ $arqueo->region_nombre ?? '—' }}
+                            </td>
+
+                            <td>
+                                {{ $arqueo->ruta_codigo }}
+                                — {{ $arqueo->ruta_nombre }}
+                            </td>
+
+                            <td>
+                                <span class="badge">
+                                    {{ str_replace(
+                                        '_',
+                                        ' ',
+                                        $arqueo->estado
+                                    ) }}
+                                </span>
+                            </td>
+
+                            <td>
+                                @php
+                                    $d = (float) $arqueo->diferencia;
+
+                                    $claseDiferencia =
+                                        $d < 0
+                                            ? 'diff-negative'
+                                            : (
+                                                $d > 0
+                                                    ? 'diff-positive'
+                                                    : 'diff-zero'
+                                            );
+                                @endphp
+
+                                <span class="{{ $claseDiferencia }}">
+                                    Q {{ number_format(abs($d), 2) }}
+
+                                    @if($d < 0)
+                                        Faltante
+                                    @elseif($d > 0)
+                                        Sobrante
+                                    @else
+                                        Exacto
+                                    @endif
+                                </span>
+                            </td>
+
+                            <td>
+                                {{ $arqueo->fuera_fecha_ordinaria
+                                    ? 'Sí'
+                                    : 'No' }}
+                            </td>
+
+                            <td class="actions-cell">
+                                <div class="table-actions">
+                                    <a
+                                        href="{{ route(
+                                            'gerencia.arqueos-agentes.show',
+                                            $arqueo->id
+                                        ) }}"
+                                        class="icon-button"
+                                        title="Ver detalle"
+                                        aria-label="Ver detalle del arqueo"
+                                    >
+                                        <svg
+                                            viewBox="0 0 24 24"
+                                            aria-hidden="true"
+                                        >
+                                            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                            <circle
+                                                cx="12"
+                                                cy="12"
+                                                r="2.8"
+                                            ></circle>
+                                        </svg>
+                                    </a>
+
+                                    <a
+                                        href="{{ route(
+                                            'gerencia.arqueos-agentes.imprimir',
+                                            $arqueo->id
+                                        ) }}"
+                                        target="_blank"
+                                        class="icon-button print"
+                                        title="Imprimir PDF"
+                                        aria-label="Imprimir arqueo en PDF"
+                                    >
+                                        <svg
+                                            viewBox="0 0 24 24"
+                                            aria-hidden="true"
+                                        >
+                                            <path d="M6 9V3h12v6"></path>
+                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                            <rect
+                                                x="6"
+                                                y="14"
+                                                width="12"
+                                                height="7"
+                                            ></rect>
+                                            <path d="M18 12h.01"></path>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
     </div>
 
     @if($arqueos->hasPages())
-        <div style="padding:16px 18px;">{{ $arqueos->links() }}</div>
+        <div class="pagination">
+            {{ $arqueos->links() }}
+        </div>
     @endif
-</div>
+</section>
 @endsection

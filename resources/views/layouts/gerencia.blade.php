@@ -29,10 +29,14 @@
             --header-height: 74px;
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         html,
-        body { min-height: 100%; }
+        body {
+            min-height: 100%;
+        }
 
         body {
             margin: 0;
@@ -98,7 +102,7 @@
             height: 280px;
             top: -170px;
             right: -150px;
-            border: 52px solid rgba(255, 255, 255, 0.04);
+            border: 52px solid rgba(255, 255, 255, .04);
             border-radius: 50%;
         }
 
@@ -110,22 +114,12 @@
             bottom: -150px;
             left: -110px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.035);
+            background: rgba(255, 255, 255, .035);
         }
 
         .sidebar-header,
         .sidebar-user,
         .sidebar-navigation,
-        .navigation-link.active .navigation-icon {
-            background: rgba(112, 223, 159, .16);
-            color: #7be4aa;
-        }
-
-        .navigation-icon svg {
-            width: 19px;
-            height: 19px;
-        }
-
         .sidebar-footer {
             position: relative;
             z-index: 2;
@@ -245,7 +239,7 @@
             padding: 11px 14px;
             border-radius: 12px;
             color: rgba(255, 255, 255, .74);
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 680;
             transition: .2s ease;
         }
@@ -257,7 +251,11 @@
         }
 
         .navigation-link.active {
-            background: linear-gradient(135deg, rgba(255, 255, 255, .18), rgba(255, 255, 255, .10));
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, .18),
+                rgba(255, 255, 255, .10)
+            );
             color: #ffffff;
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .10);
         }
@@ -278,15 +276,9 @@
             height: 34px;
             display: grid;
             place-items: center;
+            flex: 0 0 34px;
             border-radius: 10px;
             background: rgba(255, 255, 255, .08);
-            font-size: 12px;
-            font-weight: 800;
-        }
-
-        .navigation-link.active .navigation-icon {
-            background: rgba(112, 223, 159, .16);
-            color: #7be4aa;
         }
 
         .navigation-icon svg {
@@ -430,27 +422,6 @@
             line-height: 1.55;
         }
 
-        .page-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 9px 13px;
-            border: 1px solid #cfe9d9;
-            border-radius: 999px;
-            background: #effaf3;
-            color: #197245;
-            font-size: 11px;
-            font-weight: 750;
-        }
-
-        .page-badge-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--verde-principal);
-            box-shadow: 0 0 0 4px rgba(0, 166, 81, 0.11);
-        }
-
         .alert-message {
             margin-bottom: 22px;
             padding: 14px 16px;
@@ -491,11 +462,6 @@
                 display: block;
             }
 
-            .logout-button svg {
-                width: 18px;
-                height: 18px;
-            }
-
             .main-area {
                 margin-left: 0;
             }
@@ -526,6 +492,7 @@
 
 <body>
 <div class="app-layout">
+
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-decoration"></div>
 
@@ -546,8 +513,14 @@
 
         <div class="sidebar-user">
             <span class="sidebar-user-avatar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
                     <path d="M20 21a8 8 0 0 0-16 0"/>
                     <circle cx="12" cy="7" r="4"/>
                 </svg>
@@ -560,6 +533,7 @@
         </div>
 
         <nav class="sidebar-navigation">
+
             <p class="navigation-label">Supervisión</p>
 
             <div class="navigation-list">
@@ -571,7 +545,22 @@
                             : ''
                     }}"
                 >
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                            <rect x="14" y="14" width="7" height="7" rx="1"/>
+                        </svg>
+                    </span>
+
                     Dashboard
                 </a>
 
@@ -599,6 +588,7 @@
                             <path d="m9 16 2 2 4-4"/>
                         </svg>
                     </span>
+
                     Cumplimiento de Arqueos
                 </a>
             </div>
@@ -606,23 +596,94 @@
             <p class="navigation-label">Agentes</p>
 
             <div class="navigation-list">
-                <a href="{{ url('/gerencia/agentes') }}" class="navigation-link {{ request()->is('gerencia/agentes*') ? 'active' : '' }}">
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg></span>
+                <a
+                    href="{{ url('/gerencia/agentes') }}"
+                    class="navigation-link {{ request()->is('gerencia/agentes*') ? 'active' : '' }}"
+                >
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M19 8v6"/>
+                            <path d="M22 11h-6"/>
+                        </svg>
+                    </span>
+
                     Listado de Agentes
                 </a>
 
-                <a href="{{ url('/gerencia/arqueos-agentes') }}" class="navigation-link {{ request()->is('gerencia/arqueos-agentes*') ? 'active' : '' }}">
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l4 4v16H6z"/><path d="M14 2v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/></svg></span>
+                <a
+                    href="{{ url('/gerencia/arqueos-agentes') }}"
+                    class="navigation-link {{ request()->is('gerencia/arqueos-agentes*') ? 'active' : '' }}"
+                >
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M6 2h9l4 4v16H6z"/>
+                            <path d="M14 2v5h5"/>
+                            <path d="M9 13h6"/>
+                            <path d="M9 17h6"/>
+                        </svg>
+                    </span>
+
                     Arqueos por Agente
                 </a>
 
-                <a href="{{ url('/gerencia/agentes-ruta') }}" class="navigation-link {{ request()->is('gerencia/agentes-ruta*') ? 'active' : '' }}">
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19c4-8 12-8 16-14"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/></svg></span>
+                <a
+                    href="{{ url('/gerencia/agentes-ruta') }}"
+                    class="navigation-link {{ request()->is('gerencia/agentes-ruta*') ? 'active' : '' }}"
+                >
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M4 19c4-8 12-8 16-14"/>
+                            <circle cx="5" cy="19" r="2"/>
+                            <circle cx="19" cy="5" r="2"/>
+                        </svg>
+                    </span>
+
                     Agentes por Ruta
                 </a>
 
-                <a href="{{ url('/gerencia/agentes-region') }}" class="navigation-link {{ request()->is('gerencia/agentes-region*') ? 'active' : '' }}">
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18"/><path d="M12 3a15 15 0 0 0 0 18"/></svg></span>
+                <a
+                    href="{{ url('/gerencia/agentes-region') }}"
+                    class="navigation-link {{ request()->is('gerencia/agentes-region*') ? 'active' : '' }}"
+                >
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <circle cx="12" cy="12" r="9"/>
+                            <path d="M3 12h18"/>
+                            <path d="M12 3a15 15 0 0 1 0 18"/>
+                            <path d="M12 3a15 15 0 0 0 0 18"/>
+                        </svg>
+                    </span>
+
                     Agentes por Región
                 </a>
             </div>
@@ -630,18 +691,71 @@
             <p class="navigation-label">Promotores</p>
 
             <div class="navigation-list">
-                <a href="{{ url('/gerencia/promotores') }}" class="navigation-link {{ request()->is('gerencia/promotores*') ? 'active' : '' }}">
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M17 11h5"/><path d="M19.5 8.5v5"/></svg></span>
+                <a
+                    href="{{ url('/gerencia/promotores') }}"
+                    class="navigation-link {{ request()->is('gerencia/promotores*') ? 'active' : '' }}"
+                >
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M2 21a7 7 0 0 1 14 0"/>
+                            <path d="M17 11h5"/>
+                            <path d="M19.5 8.5v5"/>
+                        </svg>
+                    </span>
+
                     Listado de Promotores
                 </a>
 
-                <a href="{{ url('/gerencia/arqueos-promotores') }}" class="navigation-link {{ request()->is('gerencia/arqueos-promotores*') ? 'active' : '' }}">
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l4 4v16H6z"/><path d="M14 2v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/></svg></span>
+                <a
+                    href="{{ url('/gerencia/arqueos-promotores') }}"
+                    class="navigation-link {{ request()->is('gerencia/arqueos-promotores*') ? 'active' : '' }}"
+                >
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M6 2h9l4 4v16H6z"/>
+                            <path d="M14 2v5h5"/>
+                            <path d="M9 13h6"/>
+                            <path d="M9 17h6"/>
+                        </svg>
+                    </span>
+
                     Arqueos por Promotor
                 </a>
 
-                <a href="{{ url('/gerencia/rutas-promotores') }}" class="navigation-link {{ request()->is('gerencia/rutas-promotores*') ? 'active' : '' }}">
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19c4-8 12-8 16-14"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/></svg></span>
+                <a
+                    href="{{ url('/gerencia/rutas-promotores') }}"
+                    class="navigation-link {{ request()->is('gerencia/rutas-promotores*') ? 'active' : '' }}"
+                >
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M4 19c4-8 12-8 16-14"/>
+                            <circle cx="5" cy="19" r="2"/>
+                            <circle cx="19" cy="5" r="2"/>
+                        </svg>
+                    </span>
+
                     Rutas Asignadas
                 </a>
             </div>
@@ -649,7 +763,8 @@
             <p class="navigation-label">Arqueos</p>
 
             <div class="navigation-list">
-                <a href="{{ url('/gerencia/arqueos') }}"
+                <a
+                    href="{{ url('/gerencia/arqueos') }}"
                     class="navigation-link {{
                         request()->is('gerencia/arqueos')
                         || (
@@ -659,18 +774,71 @@
                         )
                             ? 'active'
                             : ''
-                    }}">
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l4 4v16H6z"/><path d="M14 2v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/></svg></span>
+                    }}"
+                >
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M6 2h9l4 4v16H6z"/>
+                            <path d="M14 2v5h5"/>
+                            <path d="M9 13h6"/>
+                            <path d="M9 17h6"/>
+                        </svg>
+                    </span>
+
                     Ver Todos los Arqueos
                 </a>
 
-                <a href="{{ url('/gerencia/arqueos-extemporaneos') }}" class="navigation-link {{ request()->is('gerencia/arqueos-extemporaneos*') ? 'active' : '' }}">
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M3 10h18"/><path d="m9 14 6 4"/><path d="m15 14-6 4"/></svg></span>
+                <a
+                    href="{{ url('/gerencia/arqueos-extemporaneos') }}"
+                    class="navigation-link {{ request()->is('gerencia/arqueos-extemporaneos*') ? 'active' : '' }}"
+                >
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <rect x="3" y="5" width="18" height="16" rx="2"/>
+                            <path d="M16 3v4"/>
+                            <path d="M8 3v4"/>
+                            <path d="M3 10h18"/>
+                            <path d="m9 14 6 4"/>
+                            <path d="m15 14-6 4"/>
+                        </svg>
+                    </span>
+
                     Arqueos Extemporáneos
                 </a>
 
-                <a href="{{ url('/gerencia/arqueos-anulados') }}" class="navigation-link {{ request()->is('gerencia/arqueos-anulados*') ? 'active' : '' }}">
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6"/><path d="m15 9-6 6"/></svg></span>
+                <a
+                    href="{{ url('/gerencia/arqueos-anulados') }}"
+                    class="navigation-link {{ request()->is('gerencia/arqueos-anulados*') ? 'active' : '' }}"
+                >
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <circle cx="12" cy="12" r="9"/>
+                            <path d="m9 9 6 6"/>
+                            <path d="m15 9-6 6"/>
+                        </svg>
+                    </span>
+
                     Arqueos Anulados
                 </a>
             </div>
@@ -678,8 +846,26 @@
             <p class="navigation-label">Análisis</p>
 
             <div class="navigation-list">
-                <a href="{{ url('/gerencia/reportes') }}" class="navigation-link {{ request()->is('gerencia/reportes*') ? 'active' : '' }}">
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M6 16V9"/><path d="M12 16V5"/><path d="M18 16v-4"/></svg></span>
+                <a
+                    href="{{ url('/gerencia/reportes') }}"
+                    class="navigation-link {{ request()->is('gerencia/reportes*') ? 'active' : '' }}"
+                >
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M4 19h16"/>
+                            <path d="M6 16V9"/>
+                            <path d="M12 16V5"/>
+                            <path d="M18 16v-4"/>
+                        </svg>
+                    </span>
+
                     Reportes
                 </a>
             </div>
@@ -687,11 +873,28 @@
             <p class="navigation-label">Cuenta</p>
 
             <div class="navigation-list">
-                <a href="{{ url('/gerencia/perfil') }}" class="navigation-link {{ request()->is('gerencia/perfil*') ? 'active' : '' }}">
-                    <span class="navigation-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+                <a
+                    href="{{ url('/gerencia/perfil') }}"
+                    class="navigation-link {{ request()->is('gerencia/perfil*') ? 'active' : '' }}"
+                >
+                    <span class="navigation-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <circle cx="12" cy="8" r="4"/>
+                            <path d="M4 21a8 8 0 0 1 16 0"/>
+                        </svg>
+                    </span>
+
                     Perfil
                 </a>
             </div>
+
         </nav>
 
         <footer class="sidebar-footer">
@@ -699,12 +902,19 @@
                 @csrf
 
                 <button type="submit" class="logout-button">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.9"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
                         <path d="M10 17l5-5-5-5"/>
                         <path d="M15 12H3"/>
                         <path d="M21 19V5a2 2 0 0 0-2-2h-6"/>
                     </svg>
+
                     Cerrar sesión
                 </button>
             </form>
@@ -722,8 +932,13 @@
                     id="mobileMenuButton"
                     aria-label="Abrir menú"
                 >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="2" stroke-linecap="round">
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                    >
                         <path d="M4 6h16"/>
                         <path d="M4 12h16"/>
                         <path d="M4 18h16"/>
@@ -738,13 +953,20 @@
 
             <div class="topbar-right">
                 <div class="current-date">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.9"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
                         <rect x="3" y="5" width="18" height="16" rx="2"/>
                         <path d="M16 3v4"/>
                         <path d="M8 3v4"/>
                         <path d="M3 10h18"/>
                     </svg>
+
                     {{ now()->locale('es')->translatedFormat(
                         'd \d\e F \d\e Y'
                     ) }}
