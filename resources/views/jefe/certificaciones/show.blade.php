@@ -1016,6 +1016,23 @@
         default => str_replace('_', ' ', $arqueo->estado),
     };
 
+        $tipoArqueoTexto = match ($arqueo->tipo) {
+        'VISITA_AUDITORIA' => 'Visita de Auditoría',
+        'VISITA_PROMOTOR' => 'Visita de Promotor',
+        default => str_replace('_', ' ', $arqueo->tipo),
+    };
+
+    $realizadorTexto = match ($arqueo->tipo) {
+        'VISITA_AUDITORIA' => 'Auditoría MICOOPE',
+        'VISITA_PROMOTOR' => 'Promotor de Agentes MICOOPE',
+        default => 'Realizador',
+    };
+
+    $rutaImprimir = $arqueo->tipo === 'VISITA_AUDITORIA'
+        ? route('jefe.arqueos.imprimir', $arqueo->id)
+        : route('jefe.arqueos-promotores.imprimir', $arqueo->id);
+
+
     $nombreFirma = function ($firma): string {
         if (! $firma) {
             return 'Pendiente';
