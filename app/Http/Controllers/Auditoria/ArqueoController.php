@@ -260,6 +260,11 @@ class ArqueoController extends Controller
                 'numeric',
                 'min:0',
             ],
+           'certificacion' => [
+               'required',
+               'string',
+               'max:2000',
+           ],
             'observaciones' => [
                 'nullable',
                 'string',
@@ -394,7 +399,9 @@ class ArqueoController extends Controller
                             $saldoSistema,
                         'diferencia' =>
                             $diferencia,
-                        'certificacion' => null,
+                        'certificacion' => trim(
+                           $validated['certificacion']
+                       ),
                         'observaciones' =>
                             $validated['observaciones'] ?? null,
                         'pendiente_certificacion_at' =>
@@ -495,7 +502,10 @@ class ArqueoController extends Controller
                             (float) $saldoSistema,
                         'diferencia' =>
                             (float) $diferencia,
-                        'observaciones' =>
+                        'certificacion' =>
+                           $arqueoCreado->certificacion ?? null,
+
+                       'observaciones' =>
                             $validated['observaciones'] ?? null,
                         'detalle' => array_merge(
                             $detalleBilletes,
@@ -638,7 +648,7 @@ class ArqueoController extends Controller
         /** @var Usuario $usuario */
         $usuario = $request->user();
 
-        $this->validarAuditoria($usuario);
+       $this->validarAuditoria($usuario);
 
         $this->validarArqueoPropio(
             $arqueo,

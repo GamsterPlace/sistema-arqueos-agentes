@@ -207,7 +207,7 @@
         text-align:center;
     }
 
-    .cash-grid{
+   .cash-grid{
         display:grid;
         grid-template-columns:minmax(0,1.25fr) minmax(260px,.45fr);
         gap:42px;
@@ -316,7 +316,7 @@
         white-space:nowrap;
     }
 
-    .total-row.highlight strong{
+    .total-row\.highlight strong{
         font-weight:900;
     }
 
@@ -377,7 +377,7 @@
         color:#b13c3c;
     }
 
-    .observations-section,.signatures-section{
+    .certification-section,.observations-section,.signatures-section{
         margin-top:22px;
     }
 
@@ -401,6 +401,12 @@
         resize:vertical;
     }
 
+    .certification-note{
+        margin-top:8px;
+        color:#60778a;
+        font-size:9px;
+        line-height:1.5;
+    }
     .audit-note{
         margin-top:13px;
         padding:10px 12px;
@@ -756,7 +762,31 @@
                 </aside>
             </div>
 
-            <section class="observations-section">
+            <section class="certification-section">
+
+                <h4 class="section-heading">Certificación</h4>
+
+
+               <textarea
+
+                    name="certificacion"
+                    id="certificacion"
+                    class="form-control-custom"
+                    maxlength="2000"
+                    required
+
+                >{{ old('certificacion','Con el presente arqueo de caja se deja constancia de que los valores registrados corresponden al efectivo contado y verificado al momento de realizar el arqueo.') }}</textarea>
+
+                <div class="certification-note">
+
+                    Al finalizar, el arqueo quedará firmado electrónicamente por Auditoría y pendiente de validación del Agente y certificación del Jefe de Agentes.
+
+                </div>
+
+            </section>
+
+
+           <section class="observations-section">
                 <h4 class="section-heading">Observaciones</h4>
 
                 <textarea
@@ -806,7 +836,6 @@
                     </article>
                 </div>
             </section>
-
             <div class="form-actions">
                 <a href="{{ route('auditoria.arqueos.index') }}" class="btn-secondary-custom">
                     Cancelar
