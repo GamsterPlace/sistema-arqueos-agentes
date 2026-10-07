@@ -140,7 +140,8 @@
         border-collapse:collapse;
     }
 
-    .denomination-table th{
+
+   .denomination-table th{
         padding:10px 9px;
         background:#f7f9fb;
         color:#667b8c;
@@ -504,8 +505,8 @@
                     <td colspan="2">Total Billetes</td>
                     <td>Q {{ number_format((float)$arqueo->total_billetes,2) }}</td>
                 </tr>
-            </tfoot>
-        </table>
+           </tfoot>
+       </table>
     </section>
 
     <section class="detail-card">
@@ -543,6 +544,15 @@
         </table>
     </section>
 </div>
+
+<section class="detail-card observations-card">
+
+    <h3>Certificación</h3>
+
+    <p class="observations-text">{{ $arqueo->certificacion ?: 'Sin certificación registrada.' }}</p>
+
+</section>
+
 
 <section class="detail-card observations-card">
     <h3>Observaciones</h3>
