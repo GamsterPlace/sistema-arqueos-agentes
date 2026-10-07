@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auditoria;
 
 use App\Http\Controllers\Controller;
 use App\Models\Arqueo;
+use App\Models\FirmaArqueo;
 use App\Models\Usuario;
 use App\Services\AuditoriaService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -14,6 +15,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Hash;
 
 class ArqueoController extends Controller
 {
@@ -237,6 +239,15 @@ class ArqueoController extends Controller
         $usuario = $request->user();
 
         $this->validarAuditoria($usuario);
+        $usuario->loadMissing([
+            'rol',
+            'datosPersonales',
+        ]);
+        abort_if(
+            ! $usuario->datosPersonales,
+            422,
+            'El usuario de Auditoría no tiene datos personales registrados.'
+        );
 
         $validated = $request->validate([
             'agente_id' => [
@@ -357,52 +368,37 @@ class ArqueoController extends Controller
                         'hora_inicio' => now(),
                         'hora_fin' => now(),
                         'fuera_fecha_ordinaria' => false,
-
                         'codigo_agente_historico' =>
                             $agente->codigo_agente,
-
                         'nombre_negocio_historico' =>
                             $agente->nombre_negocio,
-
                         'nombre_propietario_historico' =>
                             $agente->nombre_propietario,
-
                         'direccion_historica' =>
                             $agente->direccion,
-
                         'ruta_historica' =>
                             trim(
                                 $agente->ruta_codigo
                                 . ' - '
                                 . $agente->ruta_nombre
                             ),
-
                         'region_historica' =>
                             $agente->region_nombre,
-
                         'total_billetes' =>
                             $totalBilletes,
-
                         'total_monedas' =>
                             $totalMonedas,
-
                         'total_arqueado' =>
                             $totalArqueado,
-
                         'saldo_sistema' =>
                             $saldoSistema,
-
                         'diferencia' =>
                             $diferencia,
-
                         'certificacion' => null,
-
                         'observaciones' =>
                             $validated['observaciones'] ?? null,
-
                         'pendiente_certificacion_at' =>
                             now(),
-
                         'certificado_at' => null,
                         'anulado_at' => null,
                         'created_at' => now(),
@@ -430,6 +426,20 @@ class ArqueoController extends Controller
                         ]);
                 }
 
+                /** @var Arqueo $arqueoModelo */
+                $arqueoModelo = Arqueo::query()->findOrFail($arqueoId);
+
+                $detalleFirma = array_merge(
+                    $detalleBilletes,
+                    $detalleMonedas
+                );
+
+                $firmaRealizador = $this->crearFirmaRealizador(
+                    $arqueoModelo,
+                    $usuario,
+                    $detalleFirma
+                );
+
                 $arqueoCreado = DB::table('arqueos')
                     ->where('id', $arqueoId)
                     ->first();
@@ -446,8 +456,7 @@ class ArqueoController extends Controller
                         . ' para el Agente '
                         . $agente->codigo_agente
                         . ' — '
-                        . $agente->nombre_negocio
-                        . '.',
+                        . $agente->nombre_negocio . '.',
                     valoresAnteriores: null,
                     valoresNuevos: [
                         'id' => (int) $arqueoId,
@@ -492,6 +501,33 @@ class ArqueoController extends Controller
                             $detalleBilletes,
                             $detalleMonedas
                         ),
+                    ]
+                );
+
+                app(AuditoriaService::class)->registrar(
+                    usuario: $usuario,
+                    modulo: 'Firmas de Arqueos',
+                    accion: 'FIRMAR_ARQUEO',
+                    tablaAfectada: 'firmas_arqueos',
+                    registroId: $firmaRealizador->id,
+                    descripcion:
+                        'El usuario de Auditoría registró su firma electrónica como REALIZADOR '
+                        . 'del arqueo '
+                        . ($arqueoCreado->numero_arqueo ?? ('#' . $arqueoId))
+                        . '.',
+                    valoresAnteriores: null,
+                    valoresNuevos: [
+                        'id' => (int) $firmaRealizador->id,
+                        'arqueo_id' => (int) $firmaRealizador->arqueo_id,
+                        'usuario_id' => (int) $firmaRealizador->usuario_id,
+                        'tipo_firma' => $firmaRealizador->tipo_firma,
+                        'rol_firmante' => $firmaRealizador->rol_firmante,
+                        'nombres_historicos' => $firmaRealizador->nombres_historicos,
+                        'apellidos_historicos' => $firmaRealizador->apellidos_historicos,
+                        'algoritmo' => $firmaRealizador->algoritmo,
+                        'version_firma' => (int) $firmaRealizador->version_firma,
+                        'fecha_firma' => $firmaRealizador->fecha_firma,
+                        'valida' => (bool) $firmaRealizador->valida,
                     ]
                 );
 
@@ -595,6 +631,284 @@ class ArqueoController extends Controller
         );
     }
 
+    public function anular(
+        Request $request,
+        Arqueo $arqueo
+    ): RedirectResponse {
+        /** @var Usuario $usuario */
+        $usuario = $request->user();
+
+        $this->validarAuditoria($usuario);
+
+        $this->validarArqueoPropio(
+            $arqueo,
+            $usuario
+        );
+
+        $datosValidados = $request->validate(
+            [
+                'motivo_anulacion' => [
+                    'required',
+                    'string',
+                    'min:10',
+                    'max:500',
+                ],
+                'password' => [
+                    'required',
+                    'string',
+                ],
+            ],
+            [
+                'motivo_anulacion.required' =>
+                    'Debe indicar el motivo de la anulación.',
+                'motivo_anulacion.min' =>
+                    'El motivo debe contener al menos 10 caracteres.',
+                'motivo_anulacion.max' =>
+                    'El motivo no puede superar los 500 caracteres.',
+                'password.required' =>
+                    'Debe ingresar su contraseña para confirmar.',
+            ]
+        );
+
+        if (! Hash::check(
+            $datosValidados['password'],
+            $usuario->password
+        )) {
+            return back()
+                ->withErrors([
+                    'password' =>
+                        'La contraseña ingresada es incorrecta.',
+                ])
+                ->withInput();
+        }
+
+        return DB::transaction(
+            function () use (
+                $arqueo,
+                $usuario,
+                $datosValidados
+            ): RedirectResponse {
+                /** @var Arqueo $arqueoBloqueado */
+                $arqueoBloqueado = Arqueo::query()
+                    ->lockForUpdate()
+                    ->findOrFail($arqueo->id);
+
+                abort_if(
+                    $arqueoBloqueado->tipo !== 'VISITA_AUDITORIA'
+                    || (int) $arqueoBloqueado->creado_por
+                        !== (int) $usuario->id,
+                    404,
+                    'El arqueo solicitado no pertenece a su historial de Auditoría.'
+                );
+
+                abort_if(
+                    $arqueoBloqueado->estado === 'ANULADO',
+                    422,
+                    'El arqueo ya se encuentra anulado.'
+                );
+
+                abort_unless(
+                    in_array(
+                        $arqueoBloqueado->estado,
+                        [
+                            'PENDIENTE_CERTIFICACION',
+                            'CERTIFICADO',
+                        ],
+                        true
+                    ),
+                    422,
+                    'El arqueo no se encuentra disponible para anulación.'
+                );
+
+                $valoresAnteriores = [
+                    'id' =>
+                        (int) $arqueoBloqueado->id,
+
+                    'numero_arqueo' =>
+                        $arqueoBloqueado->numero_arqueo,
+
+                    'agente_id' =>
+                        (int) $arqueoBloqueado->agente_id,
+
+                    'creado_por' =>
+                        (int) $arqueoBloqueado->creado_por,
+
+                    'tipo' =>
+                        $arqueoBloqueado->tipo,
+
+                    'estado' =>
+                        $arqueoBloqueado->estado,
+
+                    'fecha_arqueo' =>
+                        $arqueoBloqueado->fecha_arqueo,
+
+                    'total_arqueado' =>
+                        $arqueoBloqueado->total_arqueado,
+
+                    'saldo_sistema' =>
+                        $arqueoBloqueado->saldo_sistema,
+
+                    'diferencia' =>
+                        $arqueoBloqueado->diferencia,
+
+                    'observaciones' =>
+                        $arqueoBloqueado->observaciones,
+
+                    'anulado_at' =>
+                        $arqueoBloqueado->anulado_at,
+                ];
+
+                $usuario->loadMissing(
+                    'datosPersonales'
+                );
+
+                $datosPersonales =
+                    $usuario->datosPersonales;
+
+                $nombreAuditoria = trim(
+                    (string) (
+                        $datosPersonales?->nombres
+                        ?? $datosPersonales?->nombre
+                        ?? ''
+                    )
+                    . ' '
+                    . (string) (
+                        $datosPersonales?->apellidos
+                        ?? $datosPersonales?->apellido
+                        ?? ''
+                    )
+                );
+
+                if ($nombreAuditoria === '') {
+                    $nombreAuditoria =
+                        $usuario->usuario
+                        ?? 'Auditoría';
+                }
+
+                $motivo = trim(
+                    $datosValidados[
+                        'motivo_anulacion'
+                    ]
+                );
+
+                $observacionAnterior = trim(
+                    (string)
+                    $arqueoBloqueado->observaciones
+                );
+
+                $registroAnulacion = sprintf(
+                    '[ANULACIÓN %s | Auditoría: %s | Usuario ID: %d] %s',
+                    now()->format(
+                        'd/m/Y H:i:s'
+                    ),
+                    $nombreAuditoria,
+                    $usuario->id,
+                    $motivo
+                );
+
+                $arqueoBloqueado->update([
+                    'estado' =>
+                        'ANULADO',
+
+                    'anulado_at' =>
+                        now(),
+
+                    'observaciones' =>
+                        $observacionAnterior !== ''
+                            ? $observacionAnterior
+                                . PHP_EOL
+                                . PHP_EOL
+                                . $registroAnulacion
+                            : $registroAnulacion,
+                ]);
+
+                $arqueoBloqueado->refresh();
+
+                $valoresNuevos = [
+                    'id' =>
+                        (int) $arqueoBloqueado->id,
+
+                    'numero_arqueo' =>
+                        $arqueoBloqueado->numero_arqueo,
+
+                    'agente_id' =>
+                        (int) $arqueoBloqueado->agente_id,
+
+                    'creado_por' =>
+                        (int) $arqueoBloqueado->creado_por,
+
+                    'tipo' =>
+                        $arqueoBloqueado->tipo,
+
+                    'estado' =>
+                        $arqueoBloqueado->estado,
+
+                    'fecha_arqueo' =>
+                        $arqueoBloqueado->fecha_arqueo,
+
+                    'total_arqueado' =>
+                        $arqueoBloqueado->total_arqueado,
+
+                    'saldo_sistema' =>
+                        $arqueoBloqueado->saldo_sistema,
+
+                    'diferencia' =>
+                        $arqueoBloqueado->diferencia,
+
+                    'observaciones' =>
+                        $arqueoBloqueado->observaciones,
+
+                    'anulado_at' =>
+                        $arqueoBloqueado->anulado_at,
+
+                    'motivo_anulacion' =>
+                        $motivo,
+
+                    'anulado_por_usuario_id' =>
+                        (int) $usuario->id,
+
+                    'anulado_por' =>
+                        $nombreAuditoria,
+                ];
+
+                app(AuditoriaService::class)
+                    ->registrar(
+                        usuario: $usuario,
+                        modulo: 'Auditoría de Agentes',
+                        accion: 'ANULAR_ARQUEO_AUDITORIA',
+                        tablaAfectada: 'arqueos',
+                        registroId:
+                            $arqueoBloqueado->id,
+                        descripcion:
+                            'El usuario de Auditoría '
+                            . $nombreAuditoria
+                            . ' anuló el arqueo '
+                            . $arqueoBloqueado
+                                ->numero_arqueo
+                            . '. Motivo: '
+                            . $motivo,
+                        valoresAnteriores:
+                            $valoresAnteriores,
+                        valoresNuevos:
+                            $valoresNuevos
+                    );
+
+                return redirect()
+                    ->route(
+                        'auditoria.arqueos.show',
+                        $arqueoBloqueado
+                    )
+                    ->with(
+                        'success',
+                        'El arqueo fue anulado correctamente.'
+                    );
+            }
+        );
+    }
+
+
+
+
     private function calcularDetalles(
         array $denominaciones,
         array $cantidades,
@@ -644,6 +958,131 @@ class ArqueoController extends Controller
         }
 
         return $detalles;
+    }
+
+    private function crearFirmaRealizador(
+        Arqueo $arqueo,
+        Usuario $usuario,
+        array $detalle
+    ): FirmaArqueo {
+        $detalleHash = collect($detalle)
+            ->filter(
+                fn (array $item): bool =>
+                    (int) $item['cantidad'] > 0
+            )
+            ->map(function (array $item): array {
+                return [
+                    'tipo' => $item['tipo'],
+                    'denominacion' => number_format(
+                        (float) $item['denominacion'],
+                        2,
+                        '.',
+                        ''
+                    ),
+                    'cantidad' => (int) $item['cantidad'],
+                    'subtotal' => number_format(
+                        (float) $item['subtotal'],
+                        2,
+                        '.',
+                        ''
+                    ),
+                ];
+            })
+            ->values()
+            ->all();
+
+        $documento = [
+            'numero_arqueo' => $arqueo->numero_arqueo,
+            'agente_id' => (int) $arqueo->agente_id,
+            'creado_por' => (int) $arqueo->creado_por,
+            'tipo' => $arqueo->tipo,
+            'estado' => $arqueo->estado,
+            'fecha_arqueo' => $arqueo->fecha_arqueo->format('Y-m-d'),
+            'hora_inicio' => $arqueo->hora_inicio->format('Y-m-d H:i:s'),
+            'hora_fin' => $arqueo->hora_fin?->format('Y-m-d H:i:s'),
+            'total_arqueado' => number_format(
+                (float) $arqueo->total_arqueado,
+                2,
+                '.',
+                ''
+            ),
+            'saldo_sistema' => number_format(
+                (float) $arqueo->saldo_sistema,
+                2,
+                '.',
+                ''
+            ),
+            'diferencia' => number_format(
+                (float) $arqueo->diferencia,
+                2,
+                '.',
+                ''
+            ),
+            'certificacion' => trim(
+                (string) $arqueo->certificacion
+            ),
+            'detalle' => $detalleHash,
+        ];
+
+        $documentoJson = json_encode(
+            $documento,
+            JSON_UNESCAPED_UNICODE
+            | JSON_UNESCAPED_SLASHES
+            | JSON_PRESERVE_ZERO_FRACTION
+            | JSON_THROW_ON_ERROR
+        );
+
+        $hashDocumento = hash(
+            'sha256',
+            $documentoJson
+        );
+
+        $fechaFirma = now();
+
+        $contenidoFirma = implode('|', [
+            $hashDocumento,
+            (string) $usuario->id,
+            $usuario->rol->nombre,
+            'REALIZADOR',
+            $fechaFirma->format('Y-m-d H:i:s.u'),
+            '1',
+        ]);
+
+        $claveFirma = (string) config('app.key');
+
+        if (str_starts_with($claveFirma, 'base64:')) {
+            $claveDecodificada = base64_decode(
+                substr($claveFirma, 7),
+                true
+            );
+
+            if ($claveDecodificada !== false) {
+                $claveFirma = $claveDecodificada;
+            }
+        }
+
+        return FirmaArqueo::create([
+            'arqueo_id' => $arqueo->id,
+            'usuario_id' => $usuario->id,
+            'tipo_firma' => 'REALIZADOR',
+            'rol_firmante' => $usuario->rol->nombre,
+            'nombres_historicos' => trim(
+                (string) $usuario->datosPersonales->nombres
+            ),
+            'apellidos_historicos' => trim(
+                (string) $usuario->datosPersonales->apellidos
+            ),
+            'hash_documento' => $hashDocumento,
+            'firma_electronica' => hash_hmac(
+                'sha256',
+                $contenidoFirma,
+                $claveFirma
+            ),
+            'algoritmo' => 'HMAC-SHA256',
+            'version_firma' => 1,
+            'fecha_firma' => $fechaFirma,
+            'valida' => true,
+        ]);
     }
 
     private function generarNumeroArqueo(): string

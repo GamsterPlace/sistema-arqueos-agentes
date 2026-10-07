@@ -17,6 +17,7 @@ class AgenteController extends Controller
     {
         /** @var Usuario $usuario */
         $usuario = $request->user();
+
         $this->validarJefe($usuario);
 
         $buscar = trim((string) $request->string('buscar'));
@@ -36,35 +37,133 @@ class AgenteController extends Controller
             ->orderBy('nombre')
             ->get(['id', 'codigo', 'nombre', 'region_id']);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Promotores activos agrupados por Ruta
+        |--------------------------------------------------------------------------
+        |
+        | Una Ruta puede tener más de un Promotor activo.
+        |
+        | La consulta anterior hacía JOIN directamente contra
+        | asignaciones_promotor_ruta, provocando una fila del Agente por cada
+        | Promotor asignado a la Ruta.
+        |
+        | Aquí agrupamos primero los Promotores por Ruta para mantener una sola
+        | fila por Agente.
+        |
+        */
+
+        $promotoresPorRuta = DB::table('asignaciones_promotor_ruta as apr')
+            ->join(
+                'usuarios as up',
+                'up.id',
+                '=',
+                'apr.promotor_usuario_id'
+            )
+            ->leftJoin(
+                'datos_personales as dp',
+                'dp.usuario_id',
+                '=',
+                'up.id'
+            )
+            ->where('apr.estado', true)
+            ->whereDate('apr.fecha_inicio', '<=', today())
+            ->where(function ($query): void {
+                $query
+                    ->whereNull('apr.fecha_fin')
+                    ->orWhereDate('apr.fecha_fin', '>=', today());
+            })
+            ->groupBy('apr.ruta_id')
+            ->selectRaw('apr.ruta_id')
+            ->selectRaw(
+                "GROUP_CONCAT(
+                    DISTINCT up.id
+                    ORDER BY up.id
+                    SEPARATOR ','
+                ) as promotor_id"
+            )
+            ->selectRaw(
+                "GROUP_CONCAT(
+                    DISTINCT up.usuario
+                    ORDER BY up.usuario
+                    SEPARATOR ', '
+                ) as promotor_usuario"
+            )
+            ->selectRaw(
+                "GROUP_CONCAT(
+                    DISTINCT COALESCE(
+                        NULLIF(
+                            TRIM(
+                                CONCAT(
+                                    COALESCE(dp.nombres, ''),
+                                    ' ',
+                                    COALESCE(dp.apellidos, '')
+                                )
+                            ),
+                            ''
+                        ),
+                        up.usuario
+                    )
+                    ORDER BY COALESCE(
+                        NULLIF(
+                            TRIM(
+                                CONCAT(
+                                    COALESCE(dp.nombres, ''),
+                                    ' ',
+                                    COALESCE(dp.apellidos, '')
+                                )
+                            ),
+                            ''
+                        ),
+                        up.usuario
+                    )
+                    SEPARATOR ', '
+                ) as promotor_nombres"
+            )
+            ->selectRaw("'' as promotor_apellidos");
+
         $agentes = DB::table('agentes as a')
             ->join('rutas as r', 'r.id', '=', 'a.ruta_id')
             ->join('regiones as reg', 'reg.id', '=', 'r.region_id')
-            ->leftJoin(
-                'asignaciones_promotor_ruta as apr',
+            ->leftJoinSub(
+                $promotoresPorRuta,
+                'promotores_ruta',
                 function ($join): void {
-                    $join
-                        ->on('apr.ruta_id', '=', 'r.id')
-                        ->where('apr.estado', true)
-                        ->whereDate('apr.fecha_inicio', '<=', today())
-                        ->where(function ($query): void {
-                            $query
-                                ->whereNull('apr.fecha_fin')
-                                ->orWhereDate('apr.fecha_fin', '>=', today());
-                        });
+                    $join->on(
+                        'promotores_ruta.ruta_id',
+                        '=',
+                        'r.id'
+                    );
                 }
             )
-            ->leftJoin('usuarios as up', 'up.id', '=', 'apr.promotor_usuario_id')
-            ->leftJoin('datos_personales as dp', 'dp.usuario_id', '=', 'up.id')
             ->when(
                 $buscar !== '',
                 function ($query) use ($buscar): void {
-                    $query->where(function ($subquery) use ($buscar): void {
-                        $subquery
-                            ->where('a.codigo_agente', 'like', '%' . $buscar . '%')
-                            ->orWhere('a.nombre_negocio', 'like', '%' . $buscar . '%')
-                            ->orWhere('a.nombre_propietario', 'like', '%' . $buscar . '%')
-                            ->orWhere('a.direccion', 'like', '%' . $buscar . '%');
-                    });
+                    $query->where(
+                        function ($subquery) use ($buscar): void {
+                            $subquery
+                                ->where(
+                                    'a.codigo_agente',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'a.nombre_negocio',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'a.nombre_propietario',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'a.direccion',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                );
+                        }
+                    );
                 }
             )
             ->when(
@@ -91,23 +190,37 @@ class AgenteController extends Controller
                 'r.nombre as ruta_nombre',
                 'reg.id as region_id',
                 'reg.nombre as region_nombre',
-                'up.id as promotor_id',
-                'up.usuario as promotor_usuario',
-                'dp.nombres as promotor_nombres',
-                'dp.apellidos as promotor_apellidos',
+                'promotores_ruta.promotor_id',
+                'promotores_ruta.promotor_usuario',
+                'promotores_ruta.promotor_nombres',
+                'promotores_ruta.promotor_apellidos',
             ])
             ->selectSub(
                 DB::table('arqueos')
                     ->selectRaw('COUNT(*)')
-                    ->whereColumn('arqueos.agente_id', 'a.id')
-                    ->where('arqueos.estado', '!=', 'ANULADO'),
+                    ->whereColumn(
+                        'arqueos.agente_id',
+                        'a.id'
+                    )
+                    ->where(
+                        'arqueos.estado',
+                        '!=',
+                        'ANULADO'
+                    ),
                 'total_arqueos'
             )
             ->selectSub(
                 DB::table('arqueos')
                     ->select('fecha_arqueo')
-                    ->whereColumn('arqueos.agente_id', 'a.id')
-                    ->where('arqueos.estado', '!=', 'ANULADO')
+                    ->whereColumn(
+                        'arqueos.agente_id',
+                        'a.id'
+                    )
+                    ->where(
+                        'arqueos.estado',
+                        '!=',
+                        'ANULADO'
+                    )
                     ->orderByDesc('fecha_arqueo')
                     ->orderByDesc('id')
                     ->limit(1),
@@ -116,13 +229,25 @@ class AgenteController extends Controller
             ->selectSub(
                 DB::table('arqueos')
                     ->selectRaw('COUNT(*)')
-                    ->whereColumn('arqueos.agente_id', 'a.id')
-                    ->where('arqueos.tipo', 'DIARIO_AGENTE')
-                    ->whereDate('arqueos.fecha_arqueo', today())
-                    ->where('arqueos.estado', '!=', 'ANULADO'),
+                    ->whereColumn(
+                        'arqueos.agente_id',
+                        'a.id'
+                    )
+                    ->where(
+                        'arqueos.tipo',
+                        'DIARIO_AGENTE'
+                    )
+                    ->whereDate(
+                        'arqueos.fecha_arqueo',
+                        today()
+                    )
+                    ->where(
+                        'arqueos.estado',
+                        '!=',
+                        'ANULADO'
+                    ),
                 'arqueo_hoy'
             )
-            ->distinct()
             ->orderBy('reg.nombre')
             ->orderBy('r.nombre')
             ->orderBy('a.nombre_negocio')
@@ -143,10 +268,23 @@ class AgenteController extends Controller
                 $query
                     ->selectRaw('1')
                     ->from('arqueos as arq')
-                    ->whereColumn('arq.agente_id', 'a.id')
-                    ->where('arq.tipo', 'DIARIO_AGENTE')
-                    ->whereDate('arq.fecha_arqueo', today())
-                    ->where('arq.estado', '!=', 'ANULADO');
+                    ->whereColumn(
+                        'arq.agente_id',
+                        'a.id'
+                    )
+                    ->where(
+                        'arq.tipo',
+                        'DIARIO_AGENTE'
+                    )
+                    ->whereDate(
+                        'arq.fecha_arqueo',
+                        today()
+                    )
+                    ->where(
+                        'arq.estado',
+                        '!=',
+                        'ANULADO'
+                    );
             })
             ->count();
 
@@ -168,6 +306,7 @@ class AgenteController extends Controller
     {
         /** @var Usuario $usuario */
         $usuario = $request->user();
+
         $this->validarJefe($usuario);
 
         $registro = $this->obtenerAgente($agente);
@@ -194,6 +333,7 @@ class AgenteController extends Controller
     ): Response {
         /** @var Usuario $usuario */
         $usuario = $request->user();
+
         $this->validarJefe($usuario);
 
         $registro = $this->obtenerAgente($agente);
@@ -232,6 +372,7 @@ class AgenteController extends Controller
     ): Response {
         /** @var Usuario $usuario */
         $usuario = $request->user();
+
         $this->validarJefe($usuario);
 
         abort_if(
@@ -264,7 +405,11 @@ class AgenteController extends Controller
 
         $pdf = Pdf::loadView(
             'jefe.agentes.pdf',
-            compact('arqueo', 'billetes', 'monedas')
+            compact(
+                'arqueo',
+                'billetes',
+                'monedas'
+            )
         )->setPaper('letter', 'portrait');
 
         return $pdf->stream(
@@ -274,26 +419,116 @@ class AgenteController extends Controller
 
     private function obtenerAgente(int $agente): ?object
     {
-        return DB::table('agentes as a')
-            ->join('rutas as r', 'r.id', '=', 'a.ruta_id')
-            ->join('regiones as reg', 'reg.id', '=', 'r.region_id')
-            ->leftJoin('usuarios as ua', 'ua.id', '=', 'a.usuario_id')
+        /*
+        |--------------------------------------------------------------------------
+        | Promotores activos agrupados por Ruta
+        |--------------------------------------------------------------------------
+        |
+        | El detalle del Agente utiliza la misma regla del listado:
+        | una Ruta puede tener múltiples Promotores activos sin provocar
+        | múltiples filas para el mismo Agente.
+        |
+        */
+
+        $promotoresPorRuta = DB::table('asignaciones_promotor_ruta as apr')
+            ->join(
+                'usuarios as up',
+                'up.id',
+                '=',
+                'apr.promotor_usuario_id'
+            )
             ->leftJoin(
-                'asignaciones_promotor_ruta as apr',
+                'datos_personales as dp',
+                'dp.usuario_id',
+                '=',
+                'up.id'
+            )
+            ->where('apr.estado', true)
+            ->whereDate('apr.fecha_inicio', '<=', today())
+            ->where(function ($query): void {
+                $query
+                    ->whereNull('apr.fecha_fin')
+                    ->orWhereDate('apr.fecha_fin', '>=', today());
+            })
+            ->groupBy('apr.ruta_id')
+            ->selectRaw('apr.ruta_id')
+            ->selectRaw(
+                "GROUP_CONCAT(
+                    DISTINCT up.id
+                    ORDER BY up.id
+                    SEPARATOR ','
+                ) as promotor_id"
+            )
+            ->selectRaw(
+                "GROUP_CONCAT(
+                    DISTINCT up.usuario
+                    ORDER BY up.usuario
+                    SEPARATOR ', '
+                ) as promotor_usuario"
+            )
+            ->selectRaw(
+                "GROUP_CONCAT(
+                    DISTINCT COALESCE(
+                        NULLIF(
+                            TRIM(
+                                CONCAT(
+                                    COALESCE(dp.nombres, ''),
+                                    ' ',
+                                    COALESCE(dp.apellidos, '')
+                                )
+                            ),
+                            ''
+                        ),
+                        up.usuario
+                    )
+                    ORDER BY COALESCE(
+                        NULLIF(
+                            TRIM(
+                                CONCAT(
+                                    COALESCE(dp.nombres, ''),
+                                    ' ',
+                                    COALESCE(dp.apellidos, '')
+                                )
+                            ),
+                            ''
+                        ),
+                        up.usuario
+                    )
+                    SEPARATOR ', '
+                ) as promotor_nombres"
+            )
+            ->selectRaw("'' as promotor_apellidos");
+
+        return DB::table('agentes as a')
+            ->join(
+                'rutas as r',
+                'r.id',
+                '=',
+                'a.ruta_id'
+            )
+            ->join(
+                'regiones as reg',
+                'reg.id',
+                '=',
+                'r.region_id'
+            )
+            ->leftJoin(
+                'usuarios as ua',
+                'ua.id',
+                '=',
+                'a.usuario_id'
+            )
+            ->leftJoinSub(
+                $promotoresPorRuta,
+                'promotores_ruta',
                 function ($join): void {
-                    $join
-                        ->on('apr.ruta_id', '=', 'r.id')
-                        ->where('apr.estado', true)
-                        ->whereDate('apr.fecha_inicio', '<=', today())
-                        ->where(function ($query): void {
-                            $query
-                                ->whereNull('apr.fecha_fin')
-                                ->orWhereDate('apr.fecha_fin', '>=', today());
-                        });
+                    $join->on(
+                        'promotores_ruta.ruta_id',
+                        '=',
+                        'r.id'
+                    );
                 }
             )
-            ->leftJoin('usuarios as up', 'up.id', '=', 'apr.promotor_usuario_id')
-            ->leftJoin('datos_personales as dp', 'dp.usuario_id', '=', 'up.id')
             ->where('a.id', $agente)
             ->select([
                 'a.id',
@@ -309,10 +544,10 @@ class AgenteController extends Controller
                 'r.nombre as ruta_nombre',
                 'reg.id as region_id',
                 'reg.nombre as region_nombre',
-                'up.id as promotor_id',
-                'up.usuario as promotor_usuario',
-                'dp.nombres as promotor_nombres',
-                'dp.apellidos as promotor_apellidos',
+                'promotores_ruta.promotor_id',
+                'promotores_ruta.promotor_usuario',
+                'promotores_ruta.promotor_nombres',
+                'promotores_ruta.promotor_apellidos',
             ])
             ->first();
     }

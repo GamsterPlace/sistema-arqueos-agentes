@@ -979,7 +979,6 @@
 @endpush
 
 @section('content')
-
 @php
     $fecha = \Carbon\Carbon::parse(
         $arqueo->fecha_arqueo
@@ -1045,17 +1044,14 @@
 @endphp
 
 <div class="detail-wrapper">
-
     <div class="detail-toolbar">
         <div class="detail-toolbar-copy">
             <h2>Revisión para Certificación</h2>
-
             <p>
                 Verifique cuidadosamente la información y las firmas
                 electrónicas existentes antes de certificar el arqueo.
             </p>
         </div>
-
         <div class="toolbar-actions">
             <span class="status-badge {{ $estadoClase }}">
                 {{ $estadoTexto }}
@@ -1070,153 +1066,119 @@
     @endif
 
     <article class="detail-card">
-
         <header class="detail-header">
-
             <div class="detail-brand">
                 ECOSABA
             </div>
-
             <div class="detail-title">
                 <h2>Arqueo y Corte de Caja</h2>
                 <p>Agente MICOOPE</p>
             </div>
-
             <div class="detail-reference">
                 Número de arqueo
                 <strong>
                     {{ $arqueo->numero_arqueo }}
                 </strong>
             </div>
-
         </header>
 
         <div class="detail-body">
-
             <div class="type-strip">
                 <span class="type-strip-label">
                     Tipo de arqueo
                 </span>
-
                 <span class="type-badge">
-                    Visita de Promotor
+                    {{ $tipoArqueoTexto }}
                 </span>
             </div>
 
             <section class="section">
-
                 <div class="information-grid">
-
                     <div class="field field-7">
                         <span class="field-label">
                             Nombre del negocio
                         </span>
-
                         <span class="field-value">
                             {{ $arqueo->nombre_negocio_historico ?? '—' }}
                         </span>
                     </div>
-
                     <div class="field field-5">
                         <span class="field-label">
                             Dirección
                         </span>
-
                         <span class="field-value">
                             {{ $arqueo->direccion_historica ?? '—' }}
                         </span>
                     </div>
-
                     <div class="field field-7">
                         <span class="field-label">
                             Nombre del propietario o receptor pagador
                         </span>
-
                         <span class="field-value">
                             {{ $arqueo->nombre_propietario_historico ?? '—' }}
                         </span>
                     </div>
-
                     <div class="field field-5">
                         <span class="field-label">
                             Ruta
                         </span>
-
                         <span class="field-value">
                             {{ $arqueo->ruta_historica ?? '—' }}
                         </span>
                     </div>
-
                     <div class="field field-3">
                         <span class="field-label">
                             Agente No.
                         </span>
-
                         <span class="field-value">
                             {{ $arqueo->codigo_agente_historico ?? '—' }}
                         </span>
                     </div>
-
                     <div class="field field-3">
                         <span class="field-label">
                             Fecha
                         </span>
-
                         <span class="field-value">
                             {{ $fecha }}
                         </span>
                     </div>
-
                     <div class="field field-3">
                         <span class="field-label">
                             Hora de inicio
                         </span>
-
                         <span class="field-value">
                             {{ $horaInicio }}
                         </span>
                     </div>
-
                     <div class="field field-3">
                         <span class="field-label">
                             Hora de finalización
                         </span>
-
                         <span class="field-value">
                             {{ $horaFin }}
                         </span>
                     </div>
-
                     <div class="field field-3">
                         <span class="field-label">
                             Región
                         </span>
-
                         <span class="field-value">
                             {{ $arqueo->region_historica ?? '—' }}
                         </span>
                     </div>
-
                 </div>
-
             </section>
 
             <section class="section">
-
                 <h3 class="section-title">
                     Conteo de efectivo
                 </h3>
-
                 <div class="count-layout">
-
                     <div class="denominations-grid">
-
                         <div class="count-card">
-
                             <div class="card-heading">
                                 Billetes
                             </div>
-
                             <table class="count-table">
                                 <thead>
                                     <tr>
@@ -1225,7 +1187,6 @@
                                         <th>Subtotal</th>
                                     </tr>
                                 </thead>
-
                                 <tbody>
                                     @forelse ($billetes as $detalle)
                                         <tr>
@@ -1235,13 +1196,11 @@
                                                     2
                                                 ) }}
                                             </td>
-
                                             <td>
                                                 <span class="quantity-value">
                                                     {{ $detalle->cantidad }}
                                                 </span>
                                             </td>
-
                                             <td>
                                                 <span class="subtotal-value">
                                                     Q {{ number_format(
@@ -1263,15 +1222,12 @@
                                     @endforelse
                                 </tbody>
                             </table>
-
                         </div>
 
                         <div class="count-card">
-
                             <div class="card-heading">
                                 Monedas
                             </div>
-
                             <table class="count-table">
                                 <thead>
                                     <tr>
@@ -1280,7 +1236,6 @@
                                         <th>Subtotal</th>
                                     </tr>
                                 </thead>
-
                                 <tbody>
                                     @forelse ($monedas as $detalle)
                                         <tr>
@@ -1290,13 +1245,11 @@
                                                     2
                                                 ) }}
                                             </td>
-
                                             <td>
                                                 <span class="quantity-value">
                                                     {{ $detalle->cantidad }}
                                                 </span>
                                             </td>
-
                                             <td>
                                                 <span class="subtotal-value">
                                                     Q {{ number_format(
@@ -1318,22 +1271,16 @@
                                     @endforelse
                                 </tbody>
                             </table>
-
                         </div>
-
                     </div>
 
                     <aside class="totals-card">
-
                         <div class="card-heading">
                             Totales
                         </div>
-
                         <div class="totals-content">
-
                             <div class="total-line">
                                 <span>Total billetes</span>
-
                                 <span class="money-value">
                                     Q {{ number_format(
                                         (float) $arqueo->total_billetes,
@@ -1341,10 +1288,8 @@
                                     ) }}
                                 </span>
                             </div>
-
                             <div class="total-line">
                                 <span>Total monedas</span>
-
                                 <span class="money-value">
                                     Q {{ number_format(
                                         (float) $arqueo->total_monedas,
@@ -1352,10 +1297,8 @@
                                     ) }}
                                 </span>
                             </div>
-
                             <div class="total-line">
                                 <span>Total arqueado</span>
-
                                 <span class="money-value total-arqueado">
                                     Q {{ number_format(
                                         (float) $arqueo->total_arqueado,
@@ -1363,10 +1306,8 @@
                                     ) }}
                                 </span>
                             </div>
-
                             <div class="total-line">
                                 <span>Saldo del sistema</span>
-
                                 <span class="money-value">
                                     Q {{ number_format(
                                         (float) $arqueo->saldo_sistema,
@@ -1374,74 +1315,57 @@
                                     ) }}
                                 </span>
                             </div>
-
                             <div
                                 class="difference-card {{ $diferenciaClase }}"
                             >
                                 <span>Diferencia</span>
-
                                 <strong>
                                     Q {{ number_format($diferencia, 2) }}
                                 </strong>
-
                                 <small>
                                     {{ $diferenciaTexto }}
                                 </small>
                             </div>
-
                         </div>
-
                     </aside>
-
                 </div>
-
             </section>
 
             <section class="section">
-
                 <h3 class="section-title">
                     Certificación
                 </h3>
-
                 <div class="text-box">
                     {{ $arqueo->certificacion
                         ?: 'Sin texto de certificación registrado.' }}
                 </div>
-
             </section>
 
             <section class="section">
-
                 <h3 class="section-title">
                     Observaciones
                 </h3>
-
                 <div class="text-box">
                     {{ $arqueo->observaciones
                         ?: 'Sin observaciones registradas.' }}
                 </div>
-
             </section>
 
             <section class="section signature-preview">
-
                 <h3 class="section-title">
                     Firmas electrónicas
                 </h3>
-
                 <div class="signature-grid">
-
                     <div class="signature-block">
-
-                        @if ($firmaPromotor)
+                        @if ($firmaRealizador)
                             <div class="signature-placeholder">
                                 <div>
                                     <strong>
-                                        {{ $nombreFirma($firmaPromotor) }}
+                                        {{ $nombreFirma($firmaRealizador) }}
                                     </strong>
                                     <br>
                                     Firmado electrónicamente el
-                                    {{ $fechaFirma($firmaPromotor) }}
+                                    {{ $fechaFirma($firmaRealizador) }}
                                 </div>
                             </div>
                         @else
@@ -1449,18 +1373,14 @@
                                 Firma electrónica no registrada
                             </div>
                         @endif
-
                         <div class="signature-line"></div>
-
                         <div class="signature-label">
                             Realizado Por:<br>
-                            Promotor de Agentes MICOOPE
+                            {{ $realizadorTexto }}
                         </div>
-
                     </div>
 
                     <div class="signature-block">
-
                         @if ($firmaAgente)
                             <div class="signature-placeholder">
                                 <div>
@@ -1477,18 +1397,14 @@
                                 Firma electrónica no registrada
                             </div>
                         @endif
-
                         <div class="signature-line"></div>
-
                         <div class="signature-label">
                             Validado Por:<br>
                             Propietario o Receptor Pagador
                         </div>
-
                     </div>
 
                     <div class="signature-block">
-
                         @if ($firmaJefe)
                             <div class="signature-placeholder">
                                 <div>
@@ -1505,42 +1421,30 @@
                                 Pendiente de certificación
                             </div>
                         @endif
-
                         <div class="signature-line"></div>
-
                         <div class="signature-label">
                             Certificado Por:<br>
                             Jefe de Agentes
                         </div>
-
                     </div>
-
                 </div>
-
             </section>
 
             <section class="section">
-
                 <h3 class="section-title">
                     Estado del arqueo
                 </h3>
-
                 <div class="status-box">
-
                     <strong>
                         Estado actual del registro
                     </strong>
-
                     <span class="status-badge {{ $estadoClase }}">
                         {{ $estadoTexto }}
                     </span>
-
                 </div>
-
             </section>
 
             <div class="actions">
-
                 <a
                     href="{{ route('jefe.certificaciones.index') }}"
                     class="action-button back-button"
@@ -1556,17 +1460,12 @@
                         <path d="M19 12H5"/>
                         <path d="m11 18-6-6 6-6"/>
                     </svg>
-
                     Regresar
                 </a>
 
                 <div class="actions-right">
-
                     <a
-                        href="{{ route(
-                            'jefe.arqueos-promotores.imprimir',
-                            $arqueo->id
-                        ) }}"
+                        href="{{ $rutaImprimir }}"
                         target="_blank"
                         rel="noopener"
                         class="action-button print-button"
@@ -1593,7 +1492,6 @@
                                 height="8"
                             />
                         </svg>
-
                         Imprimir PDF
                     </a>
 
@@ -1614,7 +1512,6 @@
                                 <circle cx="12" cy="12" r="9"/>
                                 <path d="m8 12 3 3 5-6"/>
                             </svg>
-
                             Certificar Arqueo
                         </button>
                     @else
@@ -1634,23 +1531,16 @@
                                 <circle cx="12" cy="12" r="9"/>
                                 <path d="m8 12 3 3 5-6"/>
                             </svg>
-
                             No disponible para certificación
                         </button>
                     @endif
-
                 </div>
-
             </div>
-
         </div>
-
     </article>
-
 </div>
 
 @if ($puedeCertificar)
-
     <div
         class="modal-backdrop"
         id="certification-modal"
@@ -1662,7 +1552,6 @@
             aria-modal="true"
             aria-labelledby="certification-title"
         >
-
             <form
                 method="POST"
                 action="{{ route(
@@ -1673,18 +1562,15 @@
                 @csrf
 
                 <div class="modal-header">
-
                     <div>
                         <h3 id="certification-title">
                             Certificar arqueo
                         </h3>
-
                         <p>
                             Confirme su identidad para registrar
                             la certificación electrónica.
                         </p>
                     </div>
-
                     <button
                         type="button"
                         class="modal-close"
@@ -1693,16 +1579,13 @@
                     >
                         ×
                     </button>
-
                 </div>
 
                 <div class="modal-body">
-
                     <div class="modal-info">
                         <span>
                             Número de arqueo
                         </span>
-
                         <strong>
                             {{ $arqueo->numero_arqueo }}
                         </strong>
@@ -1727,11 +1610,9 @@
                         como Jefe de Agentes y el arqueo cambiará
                         a estado CERTIFICADO.
                     </p>
-
                 </div>
 
                 <div class="modal-footer">
-
                     <button
                         type="button"
                         class="modal-btn"
@@ -1739,27 +1620,21 @@
                     >
                         Cancelar
                     </button>
-
                     <button
                         type="submit"
                         class="modal-btn confirm"
                     >
                         Confirmar certificación
                     </button>
-
                 </div>
-
             </form>
-
         </div>
     </div>
-
 @endif
 
 @endsection
 
 @if ($puedeCertificar)
-
     @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -1796,7 +1671,6 @@
             function openModal() {
                 modal.classList.add('is-open');
                 modal.setAttribute('aria-hidden', 'false');
-
                 document.body.style.overflow = 'hidden';
 
                 setTimeout(function () {
@@ -1807,9 +1681,7 @@
             function closeModal() {
                 modal.classList.remove('is-open');
                 modal.setAttribute('aria-hidden', 'true');
-
                 document.body.style.overflow = '';
-
                 password.value = '';
             }
 
@@ -1851,5 +1723,4 @@
         });
     </script>
     @endpush
-
 @endif

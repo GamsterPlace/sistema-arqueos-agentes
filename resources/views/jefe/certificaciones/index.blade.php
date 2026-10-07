@@ -97,7 +97,7 @@
 
     .cert-table {
         width: 100%;
-        min-width: 1050px;
+        min-width: 1120px;
         border-collapse: collapse;
     }
 
@@ -124,6 +124,27 @@
     .cert-number {
         font-weight: 800;
         color: #164c96;
+    }
+
+    .cert-type {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 0 10px;
+        border: 1px solid #c9dcf4;
+        border-radius: 999px;
+        background: #eef5ff;
+        color: #285b9b;
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: .25px;
+        white-space: nowrap;
+    }
+
+    .cert-type.auditoria {
+        border-color: #d8d0ec;
+        background: #f5f2fb;
+        color: #67489a;
     }
 
     .actions-cell {
@@ -172,6 +193,16 @@
     .cert-pagination {
         padding: 16px 18px;
     }
+
+    @media (max-width: 700px) {
+        .cert-filter-row {
+            flex-direction: column;
+        }
+
+        .cert-filter-btn {
+            width: 100%;
+        }
+    }
 </style>
 @endpush
 
@@ -179,7 +210,7 @@
 <div class="page-header">
     <div class="page-title">
         <h2>Certificar Arqueos</h2>
-        <p>Revise los arqueos realizados por Promotores y validados por el Agente antes de realizar la certificación electrónica.</p>
+        <p>Revise los arqueos realizados por Promotores o Auditoría y validados por el Agente antes de realizar la certificación electrónica.</p>
     </div>
 </div>
 
@@ -189,8 +220,12 @@
 
 <div class="cert-summary">
     <div class="cert-summary-icon">
-        <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"></path><circle cx="12" cy="12" r="9"></circle></svg>
+        <svg viewBox="0 0 24 24">
+            <path d="M9 12l2 2 4-4"></path>
+            <circle cx="12" cy="12" r="9"></circle>
+        </svg>
     </div>
+
     <div>
         <small>Pendientes de certificación</small>
         <strong>{{ $totalPendientes }}</strong>
@@ -200,9 +235,17 @@
 <div class="cert-filters">
     <form method="GET" action="{{ route('jefe.certificaciones.index') }}">
         <div class="cert-filter-row">
-            <input type="text" name="buscar" value="{{ $buscar }}" class="cert-control"
-                   placeholder="Número, agente, negocio o Promotor">
-            <button type="submit" class="cert-filter-btn">Buscar</button>
+            <input
+                type="text"
+                name="buscar"
+                value="{{ $buscar }}"
+                class="cert-control"
+                placeholder="Número, agente, negocio o realizador"
+            >
+
+            <button type="submit" class="cert-filter-btn">
+                Buscar
+            </button>
         </div>
     </form>
 </div>
@@ -214,32 +257,73 @@
                 <tr>
                     <th>Número</th>
                     <th>Fecha</th>
+                    <th>Tipo</th>
                     <th>Agente</th>
-                    <th>Promotor</th>
+                    <th>Realizado por</th>
                     <th>Ruta</th>
                     <th>Región</th>
                     <th>Acción</th>
                 </tr>
             </thead>
+
             <tbody>
             @forelse ($arqueos as $arqueo)
                 @php
-                    $promotor = trim(
-                        ($arqueo->promotor_nombres ?? '') . ' ' .
-                        ($arqueo->promotor_apellidos ?? '')
+                    $realizador = trim(
+                        ($arqueo->realizador_nombres ?? '') . ' ' .
+                        ($arqueo->realizador_apellidos ?? '')
                     );
+
+                    $esAuditoria = $arqueo->tipo === 'VISITA_AUDITORIA';
+
+                    $tipoTexto = $esAuditoria
+                        ? 'Auditoría'
+                        : 'Promotor';
                 @endphp
+
                 <tr>
-                    <td class="cert-number">{{ $arqueo->numero_arqueo }}</td>
-                    <td>{{ \Carbon\Carbon::parse($arqueo->fecha_arqueo)->format('d/m/Y') }}</td>
-                    <td><strong>{{ $arqueo->codigo_agente }}</strong> — {{ $arqueo->nombre_negocio }}</td>
-                    <td>{{ $promotor !== '' ? $promotor : ($arqueo->promotor_usuario ?? '—') }}</td>
-                    <td>{{ $arqueo->ruta_nombre ?? '—' }}</td>
-                    <td>{{ $arqueo->region_nombre ?? '—' }}</td>
+                    <td class="cert-number">
+                        {{ $arqueo->numero_arqueo }}
+                    </td>
+
+                    <td>
+                        {{ \Carbon\Carbon::parse($arqueo->fecha_arqueo)->format('d/m/Y') }}
+                    </td>
+
+                    <td>
+                        <span class="cert-type {{ $esAuditoria ? 'auditoria' : '' }}">
+                            {{ $tipoTexto }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <strong>{{ $arqueo->codigo_agente }}</strong>
+                        —
+                        {{ $arqueo->nombre_negocio }}
+                    </td>
+
+                    <td>
+                        {{ $realizador !== ''
+                            ? $realizador
+                            : ($arqueo->realizador_usuario ?? '—') }}
+                    </td>
+
+                    <td>
+                        {{ $arqueo->ruta_nombre ?? '—' }}
+                    </td>
+
+                    <td>
+                        {{ $arqueo->region_nombre ?? '—' }}
+                    </td>
+
                     <td class="actions-cell">
                         <div class="table-actions">
-                            <a href="{{ route('jefe.certificaciones.show', $arqueo->id) }}"
-                               class="icon-button" title="Visualizar arqueo" aria-label="Visualizar arqueo">
+                            <a
+                                href="{{ route('jefe.certificaciones.show', $arqueo->id) }}"
+                                class="icon-button"
+                                title="Visualizar arqueo"
+                                aria-label="Visualizar arqueo"
+                            >
                                 <svg viewBox="0 0 24 24">
                                     <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
                                     <circle cx="12" cy="12" r="2.8"></circle>
@@ -250,7 +334,9 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="empty-row">No hay arqueos pendientes de certificación.</td>
+                    <td colspan="8" class="empty-row">
+                        No hay arqueos pendientes de certificación.
+                    </td>
                 </tr>
             @endforelse
             </tbody>
@@ -258,7 +344,9 @@
     </div>
 
     @if ($arqueos->hasPages())
-        <div class="cert-pagination">{{ $arqueos->links() }}</div>
+        <div class="cert-pagination">
+            {{ $arqueos->links() }}
+        </div>
     @endif
 </div>
 @endsection

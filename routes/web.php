@@ -9,6 +9,7 @@ use App\Http\Controllers\Agente\DashboardController as DashboardAgenteController
 use App\Http\Controllers\Agente\ArqueoExtemporaneoController;
 use App\Http\Controllers\Agente\PerfilController as PerfilAgenteController;
 use App\Http\Controllers\Agente\CumplimientoArqueoController;
+use App\Http\Controllers\Agente\ArqueoAuditoriaController as ArqueoAuditoriaAgenteController;
 
 use App\Http\Controllers\Promotor\ArqueoAgenteController;
 use App\Http\Controllers\Promotor\ArqueoController as PromotorArqueoController;
@@ -794,6 +795,11 @@ Route::middleware([
             [ArqueoAuditoriaController::class, 'imprimir']
         )->name('arqueos.imprimir');
 
+        Route::post(
+            '/arqueos/{arqueo}/anular',
+            [ArqueoAuditoriaController::class, 'anular']
+        )->name('arqueos.anular');
+
         Route::get(
             '/reportes',
             [ReporteAuditoriaController::class, 'index']
@@ -1064,7 +1070,25 @@ Route::middleware([
             [DashboardAgenteController::class, 'marcarNoAtendio']
         )->name('no-atendio.store');
 
+        Route::get(
+            '/arqueos-auditoria',
+            [ArqueoAuditoriaAgenteController::class, 'index']
+        )->name('arqueos-auditoria.index');
 
+        Route::get(
+            '/arqueos-auditoria/{arqueo}',
+            [ArqueoAuditoriaAgenteController::class, 'show']
+        )->name('arqueos-auditoria.show');
+
+        Route::get(
+            '/arqueos-auditoria/{arqueo}/imprimir',
+            [ArqueoAuditoriaAgenteController::class, 'imprimir']
+        )->name('arqueos-auditoria.imprimir');
+
+        Route::post(
+            '/arqueos-auditoria/{arqueo}/firmar',
+            [ArqueoAuditoriaAgenteController::class, 'firmar']
+        )->name('arqueos-auditoria.firmar');
 
 
     });

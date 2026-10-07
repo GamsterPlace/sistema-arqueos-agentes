@@ -27,7 +27,10 @@ class AgenteController extends Controller
 
         $rutas = DB::table('rutas as r')
             ->join('regiones as reg', 'reg.id', '=', 'r.region_id')
-            ->when($regionId > 0, fn ($q) => $q->where('r.region_id', $regionId))
+            ->when(
+                $regionId > 0,
+                fn ($q) => $q->where('r.region_id', $regionId)
+            )
             ->orderBy('reg.nombre')
             ->orderBy('r.nombre')
             ->get([
@@ -38,37 +41,169 @@ class AgenteController extends Controller
                 'reg.nombre as region_nombre',
             ]);
 
+        $promotoresPorRuta = DB::table(
+            'asignaciones_promotor_ruta as apr'
+        )
+            ->join(
+                'usuarios as up',
+                'up.id',
+                '=',
+                'apr.promotor_usuario_id'
+            )
+            ->leftJoin(
+                'datos_personales as dp',
+                'dp.usuario_id',
+                '=',
+                'up.id'
+            )
+            ->where('apr.estado', true)
+            ->whereDate('apr.fecha_inicio', '<=', today())
+            ->where(function ($q): void {
+                $q->whereNull('apr.fecha_fin')
+                    ->orWhereDate(
+                        'apr.fecha_fin',
+                        '>=',
+                        today()
+                    );
+            })
+            ->groupBy('apr.ruta_id')
+            ->selectRaw('apr.ruta_id')
+            ->selectRaw(
+                "GROUP_CONCAT(
+                    DISTINCT up.id
+                    ORDER BY up.id
+                    SEPARATOR ','
+                ) as promotor_id"
+            )
+            ->selectRaw(
+                "GROUP_CONCAT(
+                    DISTINCT up.usuario
+                    ORDER BY up.usuario
+                    SEPARATOR ', '
+                ) as promotor_usuario"
+            )
+            ->selectRaw(
+                "GROUP_CONCAT(
+                    DISTINCT COALESCE(
+                        NULLIF(
+                            TRIM(
+                                CONCAT(
+                                    COALESCE(dp.nombres, ''),
+                                    ' ',
+                                    COALESCE(dp.apellidos, '')
+                                )
+                            ),
+                            ''
+                        ),
+                        up.usuario
+                    )
+                    ORDER BY COALESCE(
+                        NULLIF(
+                            TRIM(
+                                CONCAT(
+                                    COALESCE(dp.nombres, ''),
+                                    ' ',
+                                    COALESCE(dp.apellidos, '')
+                                )
+                            ),
+                            ''
+                        ),
+                        up.usuario
+                    )
+                    SEPARATOR ', '
+                ) as promotor_nombres"
+            )
+            ->selectRaw("'' as promotor_apellidos");
+
         $agentes = DB::table('agentes as a')
             ->join('rutas as r', 'r.id', '=', 'a.ruta_id')
-            ->join('regiones as reg', 'reg.id', '=', 'r.region_id')
-            ->leftJoin('asignaciones_promotor_ruta as apr', function ($join): void {
-                $join
-                    ->on('apr.ruta_id', '=', 'r.id')
-                    ->where('apr.estado', true)
-                    ->whereDate('apr.fecha_inicio', '<=', today())
-                    ->where(function ($q): void {
-                        $q->whereNull('apr.fecha_fin')
-                          ->orWhereDate('apr.fecha_fin', '>=', today());
-                    });
-            })
-            ->leftJoin('usuarios as up', 'up.id', '=', 'apr.promotor_usuario_id')
-            ->leftJoin('datos_personales as dp', 'dp.usuario_id', '=', 'up.id')
-            ->when($regionId > 0, fn ($q) => $q->where('reg.id', $regionId))
-            ->when($rutaId > 0, fn ($q) => $q->where('r.id', $rutaId))
-            ->when($estado !== '', fn ($q) => $q->where('a.estado', $estado))
-            ->when($buscar !== '', function ($q) use ($buscar): void {
-                $q->where(function ($s) use ($buscar): void {
-                    $s->where('a.codigo_agente', 'like', '%' . $buscar . '%')
-                      ->orWhere('a.nombre_negocio', 'like', '%' . $buscar . '%')
-                      ->orWhere('a.nombre_propietario', 'like', '%' . $buscar . '%')
-                      ->orWhere('a.direccion', 'like', '%' . $buscar . '%')
-                      ->orWhere('r.nombre', 'like', '%' . $buscar . '%')
-                      ->orWhere('reg.nombre', 'like', '%' . $buscar . '%')
-                      ->orWhere('up.usuario', 'like', '%' . $buscar . '%')
-                      ->orWhere('dp.nombres', 'like', '%' . $buscar . '%')
-                      ->orWhere('dp.apellidos', 'like', '%' . $buscar . '%');
-                });
-            })
+            ->join(
+                'regiones as reg',
+                'reg.id',
+                '=',
+                'r.region_id'
+            )
+            ->leftJoinSub(
+                $promotoresPorRuta,
+                'promotores_ruta',
+                function ($join): void {
+                    $join->on(
+                        'promotores_ruta.ruta_id',
+                        '=',
+                        'r.id'
+                    );
+                }
+            )
+            ->when(
+                $regionId > 0,
+                fn ($q) => $q->where(
+                    'reg.id',
+                    $regionId
+                )
+            )
+            ->when(
+                $rutaId > 0,
+                fn ($q) => $q->where(
+                    'r.id',
+                    $rutaId
+                )
+            )
+            ->when(
+                $estado !== '',
+                fn ($q) => $q->where(
+                    'a.estado',
+                    $estado
+                )
+            )
+            ->when(
+                $buscar !== '',
+                function ($q) use ($buscar): void {
+                    $q->where(
+                        function ($s) use ($buscar): void {
+                            $s->where(
+                                'a.codigo_agente',
+                                'like',
+                                '%' . $buscar . '%'
+                            )
+                                ->orWhere(
+                                    'a.nombre_negocio',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'a.nombre_propietario',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'a.direccion',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'r.nombre',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'reg.nombre',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'promotores_ruta.promotor_usuario',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                )
+                                ->orWhere(
+                                    'promotores_ruta.promotor_nombres',
+                                    'like',
+                                    '%' . $buscar . '%'
+                                );
+                        }
+                    );
+                }
+            )
             ->select([
                 'a.id',
                 'a.codigo_agente',
@@ -81,24 +216,40 @@ class AgenteController extends Controller
                 'r.nombre as ruta_nombre',
                 'reg.id as region_id',
                 'reg.nombre as region_nombre',
-                'up.id as promotor_id',
-                'up.usuario as promotor_usuario',
-                'dp.nombres as promotor_nombres',
-                'dp.apellidos as promotor_apellidos',
+                'promotores_ruta.promotor_id',
+                'promotores_ruta.promotor_usuario',
+                'promotores_ruta.promotor_nombres',
+                'promotores_ruta.promotor_apellidos',
             ])
             ->selectSub(
                 DB::table('arqueos')
                     ->selectRaw('COUNT(*)')
-                    ->whereColumn('arqueos.agente_id', 'a.id')
-                    ->where('arqueos.estado', '!=', 'ANULADO'),
+                    ->whereColumn(
+                        'arqueos.agente_id',
+                        'a.id'
+                    )
+                    ->where(
+                        'arqueos.estado',
+                        '!=',
+                        'ANULADO'
+                    ),
                 'total_arqueos'
             )
             ->selectSub(
                 DB::table('arqueos')
                     ->select('fecha_arqueo')
-                    ->whereColumn('arqueos.agente_id', 'a.id')
-                    ->where('arqueos.estado', '!=', 'ANULADO')
-                    ->orderByDesc('arqueos.fecha_arqueo')
+                    ->whereColumn(
+                        'arqueos.agente_id',
+                        'a.id'
+                    )
+                    ->where(
+                        'arqueos.estado',
+                        '!=',
+                        'ANULADO'
+                    )
+                    ->orderByDesc(
+                        'arqueos.fecha_arqueo'
+                    )
                     ->orderByDesc('arqueos.id')
                     ->limit(1),
                 'ultimo_arqueo'
@@ -106,71 +257,191 @@ class AgenteController extends Controller
             ->selectSub(
                 DB::table('arqueos')
                     ->selectRaw('COUNT(*)')
-                    ->whereColumn('arqueos.agente_id', 'a.id')
-                    ->where('arqueos.tipo', 'DIARIO_AGENTE')
-                    ->whereDate('arqueos.fecha_arqueo', today())
-                    ->where('arqueos.estado', '!=', 'ANULADO'),
+                    ->whereColumn(
+                        'arqueos.agente_id',
+                        'a.id'
+                    )
+                    ->where(
+                        'arqueos.tipo',
+                        'DIARIO_AGENTE'
+                    )
+                    ->whereDate(
+                        'arqueos.fecha_arqueo',
+                        today()
+                    )
+                    ->where(
+                        'arqueos.estado',
+                        '!=',
+                        'ANULADO'
+                    ),
                 'arqueo_hoy'
             )
-            ->distinct()
             ->orderBy('reg.nombre')
             ->orderBy('r.nombre')
             ->orderBy('a.nombre_negocio')
             ->paginate(15)
             ->withQueryString();
 
-        $totalAgentes = DB::table('agentes')->count();
-        $totalActivos = DB::table('agentes')->where('estado', 'ACTIVO')->count();
-        $totalInactivos = DB::table('agentes')->where('estado', '!=', 'ACTIVO')->count();
+        $totalAgentes = DB::table('agentes')
+            ->count();
+
+        $totalActivos = DB::table('agentes')
+            ->where('estado', 'ACTIVO')
+            ->count();
+
+        $totalInactivos = DB::table('agentes')
+            ->where('estado', '!=', 'ACTIVO')
+            ->count();
 
         $conArqueoHoy = DB::table('agentes as a')
             ->where('a.estado', 'ACTIVO')
             ->whereExists(function ($q): void {
                 $q->selectRaw('1')
-                  ->from('arqueos as arq')
-                  ->whereColumn('arq.agente_id', 'a.id')
-                  ->where('arq.tipo', 'DIARIO_AGENTE')
-                  ->whereDate('arq.fecha_arqueo', today())
-                  ->where('arq.estado', '!=', 'ANULADO');
+                    ->from('arqueos as arq')
+                    ->whereColumn(
+                        'arq.agente_id',
+                        'a.id'
+                    )
+                    ->where(
+                        'arq.tipo',
+                        'DIARIO_AGENTE'
+                    )
+                    ->whereDate(
+                        'arq.fecha_arqueo',
+                        today()
+                    )
+                    ->where(
+                        'arq.estado',
+                        '!=',
+                        'ANULADO'
+                    );
             })
             ->count();
 
-        return view('gerencia.agentes.index', compact(
-            'agentes',
-            'regiones',
-            'rutas',
-            'buscar',
-            'estado',
-            'regionId',
-            'rutaId',
-            'totalAgentes',
-            'totalActivos',
-            'totalInactivos',
-            'conArqueoHoy'
-        ));
+        return view(
+            'gerencia.agentes.index',
+            compact(
+                'agentes',
+                'regiones',
+                'rutas',
+                'buscar',
+                'estado',
+                'regionId',
+                'rutaId',
+                'totalAgentes',
+                'totalActivos',
+                'totalInactivos',
+                'conArqueoHoy'
+            )
+        );
     }
 
-    public function show(Request $request, int $agente): View
-    {
+    public function show(
+        Request $request,
+        int $agente
+    ): View {
         /** @var Usuario $usuario */
         $usuario = $request->user();
         $this->validarGerencia($usuario);
 
-        $registro = DB::table('agentes as a')
-            ->join('rutas as r', 'r.id', '=', 'a.ruta_id')
-            ->join('regiones as reg', 'reg.id', '=', 'r.region_id')
-            ->leftJoin('asignaciones_promotor_ruta as apr', function ($join): void {
-                $join
-                    ->on('apr.ruta_id', '=', 'r.id')
-                    ->where('apr.estado', true)
-                    ->whereDate('apr.fecha_inicio', '<=', today())
-                    ->where(function ($q): void {
-                        $q->whereNull('apr.fecha_fin')
-                          ->orWhereDate('apr.fecha_fin', '>=', today());
-                    });
+        $promotoresPorRuta = DB::table(
+            'asignaciones_promotor_ruta as apr'
+        )
+            ->join(
+                'usuarios as up',
+                'up.id',
+                '=',
+                'apr.promotor_usuario_id'
+            )
+            ->leftJoin(
+                'datos_personales as dp',
+                'dp.usuario_id',
+                '=',
+                'up.id'
+            )
+            ->where('apr.estado', true)
+            ->whereDate('apr.fecha_inicio', '<=', today())
+            ->where(function ($q): void {
+                $q->whereNull('apr.fecha_fin')
+                    ->orWhereDate(
+                        'apr.fecha_fin',
+                        '>=',
+                        today()
+                    );
             })
-            ->leftJoin('usuarios as up', 'up.id', '=', 'apr.promotor_usuario_id')
-            ->leftJoin('datos_personales as dp', 'dp.usuario_id', '=', 'up.id')
+            ->groupBy('apr.ruta_id')
+            ->selectRaw('apr.ruta_id')
+            ->selectRaw(
+                "GROUP_CONCAT(
+                    DISTINCT up.id
+                    ORDER BY up.id
+                    SEPARATOR ','
+                ) as promotor_id"
+            )
+            ->selectRaw(
+                "GROUP_CONCAT(
+                    DISTINCT up.usuario
+                    ORDER BY up.usuario
+                    SEPARATOR ', '
+                ) as promotor_usuario"
+            )
+            ->selectRaw(
+                "GROUP_CONCAT(
+                    DISTINCT COALESCE(
+                        NULLIF(
+                            TRIM(
+                                CONCAT(
+                                    COALESCE(dp.nombres, ''),
+                                    ' ',
+                                    COALESCE(dp.apellidos, '')
+                                )
+                            ),
+                            ''
+                        ),
+                        up.usuario
+                    )
+                    ORDER BY COALESCE(
+                        NULLIF(
+                            TRIM(
+                                CONCAT(
+                                    COALESCE(dp.nombres, ''),
+                                    ' ',
+                                    COALESCE(dp.apellidos, '')
+                                )
+                            ),
+                            ''
+                        ),
+                        up.usuario
+                    )
+                    SEPARATOR ', '
+                ) as promotor_nombres"
+            )
+            ->selectRaw("'' as promotor_apellidos");
+
+        $registro = DB::table('agentes as a')
+            ->join(
+                'rutas as r',
+                'r.id',
+                '=',
+                'a.ruta_id'
+            )
+            ->join(
+                'regiones as reg',
+                'reg.id',
+                '=',
+                'r.region_id'
+            )
+            ->leftJoinSub(
+                $promotoresPorRuta,
+                'promotores_ruta',
+                function ($join): void {
+                    $join->on(
+                        'promotores_ruta.ruta_id',
+                        '=',
+                        'r.id'
+                    );
+                }
+            )
             ->where('a.id', $agente)
             ->select([
                 'a.id',
@@ -182,18 +453,35 @@ class AgenteController extends Controller
                 'r.codigo as ruta_codigo',
                 'r.nombre as ruta_nombre',
                 'reg.nombre as region_nombre',
-                'up.usuario as promotor_usuario',
-                'dp.nombres as promotor_nombres',
-                'dp.apellidos as promotor_apellidos',
+                'promotores_ruta.promotor_usuario',
+                'promotores_ruta.promotor_nombres',
+                'promotores_ruta.promotor_apellidos',
             ])
             ->first();
 
-        abort_if(! $registro, 404, 'El Agente solicitado no existe.');
+        abort_if(
+            ! $registro,
+            404,
+            'El Agente solicitado no existe.'
+        );
 
         $arqueos = DB::table('arqueos as arq')
-            ->leftJoin('usuarios as uc', 'uc.id', '=', 'arq.creado_por')
-            ->leftJoin('datos_personales as dp', 'dp.usuario_id', '=', 'uc.id')
-            ->where('arq.agente_id', $agente)
+            ->leftJoin(
+                'usuarios as uc',
+                'uc.id',
+                '=',
+                'arq.creado_por'
+            )
+            ->leftJoin(
+                'datos_personales as dp',
+                'dp.usuario_id',
+                '=',
+                'uc.id'
+            )
+            ->where(
+                'arq.agente_id',
+                $agente
+            )
             ->select([
                 'arq.id',
                 'arq.numero_arqueo',
@@ -211,14 +499,18 @@ class AgenteController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('gerencia.agentes.show', [
-            'agente' => $registro,
-            'arqueos' => $arqueos,
-        ]);
+        return view(
+            'gerencia.agentes.show',
+            [
+                'agente' => $registro,
+                'arqueos' => $arqueos,
+            ]
+        );
     }
 
-    private function validarGerencia(Usuario $usuario): void
-    {
+    private function validarGerencia(
+        Usuario $usuario
+    ): void {
         $usuario->loadMissing('rol');
 
         abort_if(

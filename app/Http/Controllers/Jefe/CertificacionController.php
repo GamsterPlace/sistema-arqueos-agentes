@@ -29,8 +29,15 @@ class CertificacionController extends Controller
             ->leftJoin('datos_personales as dp', 'dp.usuario_id', '=', 'up.id')
             ->leftJoin('rutas as r', 'r.id', '=', 'a.ruta_id')
             ->leftJoin('regiones as reg', 'reg.id', '=', 'r.region_id')
-            ->where('arq.tipo', 'VISITA_PROMOTOR')
+            ->whereIn('arq.tipo', ['VISITA_PROMOTOR', 'VISITA_AUDITORIA'])
             ->where('arq.estado', 'PENDIENTE_CERTIFICACION')
+            ->whereExists(function ($query): void {
+                $query->selectRaw('1')
+                    ->from('firmas_arqueos as fr')
+                    ->whereColumn('fr.arqueo_id', 'arq.id')
+                    ->where('fr.tipo_firma', 'REALIZADOR')
+                    ->where('fr.valida', true);
+            })
             ->whereExists(function ($query): void {
                 $query->selectRaw('1')
                     ->from('firmas_arqueos as fv')
@@ -61,6 +68,7 @@ class CertificacionController extends Controller
                 'arq.numero_arqueo',
                 'arq.fecha_arqueo',
                 'arq.estado',
+                'arq.tipo',
                 'a.codigo_agente',
                 'a.nombre_negocio',
                 'r.nombre as ruta_nombre',
@@ -75,8 +83,15 @@ class CertificacionController extends Controller
             ->withQueryString();
 
         $totalPendientes = DB::table('arqueos as arq')
-            ->where('arq.tipo', 'VISITA_PROMOTOR')
+            ->whereIn('arq.tipo', ['VISITA_PROMOTOR', 'VISITA_AUDITORIA'])
             ->where('arq.estado', 'PENDIENTE_CERTIFICACION')
+            ->whereExists(function ($query): void {
+                $query->selectRaw('1')
+                    ->from('firmas_arqueos as fr')
+                    ->whereColumn('fr.arqueo_id', 'arq.id')
+                    ->where('fr.tipo_firma', 'REALIZADOR')
+                    ->where('fr.valida', true);
+            })
             ->whereExists(function ($query): void {
                 $query->selectRaw('1')
                     ->from('firmas_arqueos as fv')
@@ -107,9 +122,9 @@ class CertificacionController extends Controller
         $this->validarJefe($usuario);
 
         abort_if(
-            $arqueo->tipo !== 'VISITA_PROMOTOR',
+            ! in_array($arqueo->tipo, ['VISITA_PROMOTOR', 'VISITA_AUDITORIA'], true),
             404,
-            'Este arqueo no corresponde a una visita de Promotor.'
+            'Este arqueo no corresponde a una visita certificable.'
         );
 
         $arqueo->loadMissing(['detalles', 'firmas']);
@@ -124,7 +139,7 @@ class CertificacionController extends Controller
             ->sortByDesc('denominacion')
             ->values();
 
-        $firmaPromotor = $arqueo->firmas
+        $firmaRealizador = $arqueo->firmas
             ->first(fn ($firma) =>
                 $firma->tipo_firma === 'REALIZADOR' && (bool) $firma->valida
             );
@@ -141,6 +156,7 @@ class CertificacionController extends Controller
 
         $puedeCertificar =
             $arqueo->estado === 'PENDIENTE_CERTIFICACION'
+            && $firmaRealizador !== null
             && $firmaAgente !== null
             && $firmaJefe === null;
 
@@ -148,7 +164,7 @@ class CertificacionController extends Controller
             'arqueo',
             'billetes',
             'monedas',
-            'firmaPromotor',
+            'firmaRealizador',
             'firmaAgente',
             'firmaJefe',
             'puedeCertificar'
@@ -181,15 +197,27 @@ class CertificacionController extends Controller
                 ->findOrFail($arqueo->id);
 
             abort_if(
-                $arqueoBloqueado->tipo !== 'VISITA_PROMOTOR',
+                ! in_array($arqueoBloqueado->tipo, ['VISITA_PROMOTOR', 'VISITA_AUDITORIA'], true),
                 422,
-                'Este arqueo no corresponde a un arqueo realizado por Promotor.'
+                'Este arqueo no corresponde a un arqueo certificable.'
             );
 
             abort_if(
                 $arqueoBloqueado->estado !== 'PENDIENTE_CERTIFICACION',
                 422,
                 'El arqueo ya no se encuentra pendiente de certificación.'
+            );
+
+            $firmaRealizador = FirmaArqueo::query()
+                ->where('arqueo_id', $arqueoBloqueado->id)
+                ->where('tipo_firma', 'REALIZADOR')
+                ->where('valida', true)
+                ->first();
+
+            abort_if(
+                ! $firmaRealizador,
+                422,
+                'El realizador todavía no ha firmado electrónicamente este arqueo.'
             );
 
             $firmaAgente = FirmaArqueo::query()
